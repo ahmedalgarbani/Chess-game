@@ -9,6 +9,12 @@
 | ![البداية](docs/screenshots/onboarding.jpg) | ![الرئيسية](docs/screenshots/home.jpg) | ![رحلة التحدي](docs/screenshots/levels.jpg) | ![المدرّب](docs/screenshots/game-coach.jpg) |
 | ![تلميحات وتنبؤات](docs/screenshots/hint-predictions.jpg) | ![درس](docs/screenshots/lesson.jpg) | ![الإنجازات](docs/screenshots/profile.jpg) | ![نهاية المباراة](docs/screenshots/game-over.jpg) |
 
+## تحميل التطبيق (أندرويد)
+
+**[⬇️ حمّل أحدث نسخة APK](https://github.com/ahmedalgarbani/Chess-game/releases/latest/download/ruqa-chess.apk)** — أو تصفّح كل النسخ في صفحة [Releases](https://github.com/ahmedalgarbani/Chess-game/releases).
+
+تُبنى النسخة تلقائياً عبر GitHub Actions (`.github/workflows/android-apk.yml`) مع كل تحديث للكود. عند التثبيت اسمح بـ«تثبيت التطبيقات من مصادر غير معروفة».
+
 ## المزايا
 
 ### أوضاع اللعب
@@ -57,6 +63,15 @@ flutter test           # 75 اختباراً
 - على iOS قد يحتاج الاكتشاف التلقائي (بث UDP) إلى صلاحية Multicast من Apple؛ الإدخال اليدوي للعنوان يعمل دائماً.
 - للعدالة، تتوقف التلميحات والتنبؤات والحماية من الأخطاء في مباريات الشبكة.
 - اللعب عبر الشبكة غير متاح في نسخة الويب (المتصفح لا يسمح بالـ sockets).
+
+### توقيع ثابت للتحديثات (اختياري)
+بدون إعداد إضافي تُوقَّع كل نسخة بمفتاح تجريبي مختلف، فيلزم حذف النسخة القديمة قبل تثبيت الجديدة. لتثبيت التحديثات فوق القديمة مباشرة، أنشئ مفتاحاً وأضفه في *Settings ← Secrets and variables ← Actions* بهذه الأسماء:
+`ANDROID_KEYSTORE_BASE64`، `ANDROID_KEYSTORE_PASSWORD`، `ANDROID_KEY_ALIAS`، `ANDROID_KEY_PASSWORD`.
+
+```bash
+keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+base64 -w 0 upload-keystore.jks   # قيمة ANDROID_KEYSTORE_BASE64
+```
 
 ## البنية (Clean Architecture)
 
