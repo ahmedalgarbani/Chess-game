@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'app/app.dart';
 import 'app/app_dependencies.dart';
-import 'core/theme/app_colors.dart';
+import 'core/theme/app_palette.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,10 +12,10 @@ Future<void> main() async {
     DeviceOrientation.portraitDown,
   ]);
   SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
+    SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: AppColors.background,
+      systemNavigationBarColor: AppPalette.royal.background,
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );

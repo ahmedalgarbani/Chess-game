@@ -10,7 +10,7 @@ extension CoachToneStyle on CoachTone {
     CoachTone.info => AppColors.sapphire,
     CoachTone.tip => AppColors.amethyst,
     CoachTone.praise => AppColors.emerald,
-    CoachTone.warning => AppColors.gold,
+    CoachTone.warning => AppColors.amber,
     CoachTone.danger => AppColors.ruby,
   };
 

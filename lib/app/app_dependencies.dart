@@ -2,6 +2,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../features/game/data/isolate_chess_ai_service.dart';
 import '../features/game/domain/chess_ai_service.dart';
+import '../features/history/data/prefs_history_repository.dart';
+import '../features/history/domain/history_repository.dart';
 import '../features/lan/data/lan_service_factory.dart';
 import '../features/lan/domain/lan_service.dart';
 import '../features/progress/data/prefs_progress_repository.dart';
@@ -14,6 +16,7 @@ class AppDependencies {
   const AppDependencies({
     required this.settingsRepository,
     required this.progressRepository,
+    required this.historyRepository,
     required this.aiService,
     required this.lanService,
   });
@@ -23,6 +26,7 @@ class AppDependencies {
     return AppDependencies(
       settingsRepository: PrefsSettingsRepository(prefs),
       progressRepository: PrefsProgressRepository(prefs),
+      historyRepository: PrefsHistoryRepository(prefs),
       aiService: IsolateChessAiService(),
       lanService: createLanService(),
     );
@@ -30,6 +34,7 @@ class AppDependencies {
 
   final SettingsRepository settingsRepository;
   final ProgressRepository progressRepository;
+  final HistoryRepository historyRepository;
   final ChessAiService aiService;
   final LanService lanService;
 }

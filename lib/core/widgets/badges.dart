@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../engine/chess_engine.dart';
 import '../chess_ui/piece_painter.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
+import '../theme/avatar_frame.dart';
 import '../theme/board_theme.dart';
 
 /// A gold coin counter.
@@ -14,12 +16,13 @@ class CoinChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 14, vertical: 7),
       decoration: BoxDecoration(
         color: AppColors.surfaceGlass,
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: AppColors.outline),
+        border: Border.all(color: palette.outline),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -28,9 +31,9 @@ class CoinChip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             '$coins',
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w800,
-              color: AppColors.goldLight,
+              color: palette.accentLight,
               fontSize: 15,
             ),
           ),
@@ -48,13 +51,14 @@ class CoinIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: AppColors.goldGradient,
-        border: Border.all(color: AppColors.goldDeep, width: size * 0.08),
+        gradient: palette.accentGradient,
+        border: Border.all(color: palette.accentDeep, width: size * 0.08),
       ),
       alignment: Alignment.center,
       child: Icon(
@@ -81,6 +85,7 @@ class StarRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -88,7 +93,7 @@ class StarRow extends StatelessWidget {
           Icon(
             i < stars ? Icons.star_rounded : Icons.star_outline_rounded,
             size: size,
-            color: i < stars ? AppColors.gold : AppColors.textMuted,
+            color: i < stars ? palette.accent : AppColors.textMuted,
           ),
       ],
     );
@@ -103,6 +108,7 @@ class PieceMedallion extends StatelessWidget {
     this.size = 56,
     this.locked = false,
     this.glow = false,
+    this.frame,
   });
 
   final Piece piece;
@@ -110,46 +116,63 @@ class PieceMedallion extends StatelessWidget {
   final bool locked;
   final bool glow;
 
+  /// A decorative ring; the theme accent is used when null.
+  final AvatarFrame? frame;
+
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final ring = size * (frame == null ? 0.045 : 0.075);
+    final ringGradient = locked
+        ? LinearGradient(
+            colors: [
+              AppColors.textMuted.withValues(alpha: 0.4),
+              AppColors.textMuted.withValues(alpha: 0.4),
+            ],
+          )
+        : (frame ?? AvatarFrame.classic).gradient(palette.accent);
     return Container(
       width: size,
       height: size,
+      padding: EdgeInsets.all(ring),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: locked
-            ? const LinearGradient(
-                colors: [Color(0xFF2A3157), Color(0xFF1A1F3D)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              )
-            : const RadialGradient(
-                colors: [Color(0xFF34407A), Color(0xFF151A3A)],
-                center: Alignment(-0.3, -0.4),
-              ),
-        border: Border.all(
-          color: locked
-              ? AppColors.textMuted.withValues(alpha: 0.4)
-              : AppColors.gold,
-          width: size * 0.045,
-        ),
+        gradient: ringGradient,
         boxShadow: [
           if (glow)
             BoxShadow(
-              color: AppColors.gold.withValues(alpha: 0.45),
+              color: palette.accent.withValues(alpha: 0.45),
               blurRadius: size * 0.4,
               spreadRadius: size * 0.02,
             ),
         ],
       ),
-      padding: EdgeInsets.all(size * 0.14),
-      child: locked
-          ? Icon(
-              Icons.lock_rounded,
-              color: AppColors.textMuted,
-              size: size * 0.42,
-            )
-          : PieceView(piece: piece, style: PieceStyle.royal, shadow: false),
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: locked
+              ? LinearGradient(
+                  colors: [palette.surfaceHigh, palette.surface],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                )
+              : RadialGradient(
+                  colors: [
+                    Color.lerp(palette.surfaceHigh, Colors.white, 0.08)!,
+                    palette.background,
+                  ],
+                  center: const Alignment(-0.3, -0.4),
+                ),
+        ),
+        padding: EdgeInsets.all(size * 0.1),
+        child: locked
+            ? Icon(
+                Icons.lock_rounded,
+                color: AppColors.textMuted,
+                size: size * 0.42,
+              )
+            : PieceView(piece: piece, style: PieceStyle.royal, shadow: false),
+      ),
     );
   }
 }
@@ -163,6 +186,7 @@ class GoldProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return ClipRRect(
       borderRadius: BorderRadius.circular(height),
       child: SizedBox(
@@ -170,12 +194,12 @@ class GoldProgressBar extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            const ColoredBox(color: AppColors.surfaceHigh),
+            ColoredBox(color: palette.surfaceHigh),
             FractionallySizedBox(
               alignment: AlignmentDirectional.centerStart,
               widthFactor: value.clamp(0, 1),
-              child: const DecoratedBox(
-                decoration: BoxDecoration(gradient: AppColors.goldGradient),
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: palette.accentGradient),
               ),
             ),
           ],
@@ -194,6 +218,7 @@ class SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10, top: 6),
       child: Row(
@@ -202,7 +227,7 @@ class SectionTitle extends StatelessWidget {
             width: 4,
             height: 18,
             decoration: BoxDecoration(
-              gradient: AppColors.goldGradient,
+              gradient: palette.accentGradient,
               borderRadius: BorderRadius.circular(4),
             ),
           ),

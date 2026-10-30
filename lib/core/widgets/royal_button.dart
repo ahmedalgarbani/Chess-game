@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 
 /// The primary call-to-action: a gold gradient pill with a soft glow.
 class RoyalButton extends StatelessWidget {
@@ -19,21 +20,22 @@ class RoyalButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final enabled = onPressed != null;
     final content = Row(
       mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (icon != null) ...[
-          Icon(icon, color: const Color(0xFF2A1C02), size: 22),
+          Icon(icon, color: palette.onAccent, size: 22),
           const SizedBox(width: 10),
         ],
         Flexible(
           child: Text(
             label,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFF2A1C02),
+            style: TextStyle(
+              color: palette.onAccent,
               fontSize: 17,
               fontWeight: FontWeight.w800,
             ),
@@ -47,11 +49,11 @@ class RoyalButton extends StatelessWidget {
       opacity: enabled ? 1 : 0.45,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: AppColors.goldGradient,
+          gradient: palette.accentGradient,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: AppColors.gold.withValues(alpha: enabled ? 0.35 : 0),
+              color: palette.accent.withValues(alpha: enabled ? 0.35 : 0),
               blurRadius: 22,
               offset: const Offset(0, 8),
             ),
@@ -132,9 +134,10 @@ class CircleIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final button = Material(
       color: AppColors.surfaceGlass,
-      shape: const CircleBorder(side: BorderSide(color: AppColors.outline)),
+      shape: CircleBorder(side: BorderSide(color: palette.outline)),
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onPressed,

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../app/routes.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/widgets/badges.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/royal_background.dart';
@@ -197,15 +198,16 @@ class _WaitingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final s = context.s;
     return GlassCard(
-      borderColor: AppColors.gold.withValues(alpha: 0.6),
+      borderColor: palette.accent.withValues(alpha: 0.6),
       child: Column(
         children: [
-          const SizedBox(
+          SizedBox(
             width: 46,
             height: 46,
-            child: CircularProgressIndicator(color: AppColors.gold),
+            child: CircularProgressIndicator(color: palette.accent),
           ),
           const SizedBox(height: 14),
           Text(
@@ -220,10 +222,10 @@ class _WaitingCard extends StatelessWidget {
               state.port == null || state.port == LanService.gamePort
                   ? address
                   : '$address:${state.port}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
-                color: AppColors.goldLight,
+                color: palette.accentLight,
                 letterSpacing: 1,
               ),
             ),
@@ -260,6 +262,7 @@ class _JoinCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final s = context.s;
     final connecting = state.phase == LanPhase.connecting;
     return GlassCard(
@@ -290,9 +293,9 @@ class _JoinCard extends StatelessWidget {
             for (final host in state.hosts)
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(
+                leading: Icon(
                   Icons.sports_esports_rounded,
-                  color: AppColors.gold,
+                  color: palette.accent,
                 ),
                 title: Text(
                   s.hostedBy(host.name),

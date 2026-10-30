@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 
 /// A translucent rounded card with a thin gold edge.
 class GlassCard extends StatelessWidget {
@@ -23,9 +24,10 @@ class GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(radius),
-      side: BorderSide(color: borderColor ?? AppColors.outline),
+      side: BorderSide(color: borderColor ?? palette.outline),
     );
     return Material(
       color: Colors.transparent,
@@ -38,8 +40,8 @@ class GlassCard extends StatelessWidget {
         ),
         child: InkWell(
           onTap: onTap,
-          splashColor: AppColors.gold.withValues(alpha: 0.12),
-          highlightColor: AppColors.gold.withValues(alpha: 0.06),
+          splashColor: palette.accent.withValues(alpha: 0.12),
+          highlightColor: palette.accent.withValues(alpha: 0.06),
           child: Padding(padding: padding, child: child),
         ),
       ),

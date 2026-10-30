@@ -1,29 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/chess_ui/piece_painter.dart';
+import '../../../app/routes.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/board_theme.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/widgets/badges.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/royal_background.dart';
-import '../../../engine/chess_engine.dart';
+import '../../history/presentation/game_record_tile.dart';
+import '../../history/presentation/game_review_page.dart';
+import '../../history/presentation/history_cubit.dart';
 import '../../lessons/domain/lesson_catalog.dart';
 import '../../settings/domain/app_settings.dart';
+import '../../shop/presentation/shop_page.dart';
 import '../../settings/presentation/settings_cubit.dart';
 import '../domain/achievement.dart';
 import '../domain/player_progress.dart';
 import '../domain/player_rank.dart';
 import 'achievement_style.dart';
 import 'progress_cubit.dart';
+import 'widgets/player_avatar.dart';
 
-/// Achievements, the unlockable collection and statistics.
+/// The player's card, achievements, game history and statistics.
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final s = context.s;
     final progress = context.watch<ProgressCubit>().state;
     final settings = context.watch<SettingsCubit>().state;
@@ -47,16 +52,16 @@ class ProfilePage extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: AppColors.surfaceGlass,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.outline),
+                      border: Border.all(color: palette.outline),
                     ),
                     child: TabBar(
                       indicator: BoxDecoration(
-                        gradient: AppColors.goldGradient,
+                        gradient: palette.accentGradient,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       tabs: [
                         Tab(text: s.achievementsTab),
-                        Tab(text: s.collectionTab),
+                        Tab(text: s.historyTab),
                         Tab(text: s.statsTab),
                       ],
                     ),
@@ -67,7 +72,7 @@ class ProfilePage extends StatelessWidget {
                   child: TabBarView(
                     children: [
                       _AchievementsTab(progress: progress),
-                      _CollectionTab(progress: progress, settings: settings),
+                      const _HistoryTab(),
                       _StatsTab(progress: progress),
                     ],
                   ),
@@ -89,6 +94,7 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final s = context.s;
     final level = progress.level;
     final start = PlayerRank.xpForLevel(level);
@@ -96,7 +102,7 @@ class _ProfileHeader extends StatelessWidget {
     return GlassCard(
       child: Row(
         children: [
-          const PieceMedallion(piece: Piece.whiteKing, size: 64, glow: true),
+          const PlayerAvatar(size: 64, glow: true),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -107,9 +113,9 @@ class _ProfileHeader extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 Text(
-                  '${s.levelLabel(level)} · ${s.rankTitle(progress.title)}',
-                  style: const TextStyle(
-                    color: AppColors.goldLight,
+                  '${s.levelLabel(level)} · ${displayTitle(s, settings, progress)}',
+                  style: TextStyle(
+                    color: palette.accentLight,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -124,7 +130,19 @@ class _ProfileHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          CoinChip(coins: progress.coins),
+          Column(
+            children: [
+              CoinChip(coins: progress.coins),
+              const SizedBox(height: 6),
+              TextButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const ShopPage()),
+                ),
+                icon: const Icon(Icons.storefront_rounded, size: 18),
+                label: Text(s.shopTitle),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -149,6 +167,7 @@ class _AchievementsTab extends StatelessWidget {
       ),
       itemCount: Achievement.values.length,
       itemBuilder: (context, index) {
+        final palette = context.palette;
         final achievement = Achievement.values[index];
         final earned = progress.achievements.contains(achievement);
         final color = earned ? achievement.color : AppColors.textMuted;
@@ -206,9 +225,9 @@ class _AchievementsTab extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     '${achievement.coins}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w800,
-                      color: AppColors.goldLight,
+                      color: palette.accentLight,
                     ),
                   ),
                 ],
@@ -221,165 +240,32 @@ class _AchievementsTab extends StatelessWidget {
   }
 }
 
-class _CollectionTab extends StatelessWidget {
-  const _CollectionTab({required this.progress, required this.settings});
-
-  final PlayerProgress progress;
-  final AppSettings settings;
+class _HistoryTab extends StatelessWidget {
+  const _HistoryTab();
 
   @override
   Widget build(BuildContext context) {
-    final s = context.s;
-    final style = PieceStyle.byId(settings.pieceStyleId);
-    final board = BoardTheme.byId(settings.boardThemeId);
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      children: [
-        SectionTitle(s.boardThemes),
-        for (final theme in BoardTheme.all)
-          _CollectionItem(
-            name: s.boardThemeName(theme.id),
-            price: theme.price,
-            owned:
-                progress.ownedBoardThemes.contains(theme.id) ||
-                theme.price == 0,
-            selected: settings.boardThemeId == theme.id,
-            preview: _BoardPreview(theme: theme, style: style),
-            onBuy: () => context.read<ProgressCubit>().buyBoardTheme(
-              theme.id,
-              theme.price,
-            ),
-            onUse: () => context.read<SettingsCubit>().update(
-              (s) => s.copyWith(boardThemeId: theme.id),
-            ),
+    final games = context.watch<HistoryCubit>().state.games;
+    if (games.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Text(
+            context.s.historyEmpty,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
-        const SizedBox(height: 12),
-        SectionTitle(s.pieceStyles),
-        for (final pieceStyle in PieceStyle.all)
-          _CollectionItem(
-            name: s.pieceStyleName(pieceStyle.id),
-            price: pieceStyle.price,
-            owned:
-                progress.ownedPieceStyles.contains(pieceStyle.id) ||
-                pieceStyle.price == 0,
-            selected: settings.pieceStyleId == pieceStyle.id,
-            preview: _BoardPreview(theme: board, style: pieceStyle),
-            onBuy: () => context.read<ProgressCubit>().buyPieceStyle(
-              pieceStyle.id,
-              pieceStyle.price,
-            ),
-            onUse: () => context.read<SettingsCubit>().update(
-              (s) => s.copyWith(pieceStyleId: pieceStyle.id),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _CollectionItem extends StatelessWidget {
-  const _CollectionItem({
-    required this.name,
-    required this.price,
-    required this.owned,
-    required this.selected,
-    required this.preview,
-    required this.onBuy,
-    required this.onUse,
-  });
-
-  final String name;
-  final int price;
-  final bool owned;
-  final bool selected;
-  final Widget preview;
-  final bool Function() onBuy;
-  final VoidCallback onUse;
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.s;
-    final Widget action;
-    if (selected) {
-      action = Chip(
-        avatar: const Icon(
-          Icons.check_rounded,
-          size: 18,
-          color: AppColors.background,
         ),
-        label: Text(s.inUse),
-        backgroundColor: AppColors.gold,
-        labelStyle: const TextStyle(color: AppColors.background),
-      );
-    } else if (owned) {
-      action = OutlinedButton(onPressed: onUse, child: Text(s.use));
-    } else {
-      action = FilledButton.icon(
-        onPressed: () {
-          final messenger = ScaffoldMessenger.of(context);
-          if (onBuy()) {
-            onUse();
-            messenger.showSnackBar(SnackBar(content: Text(s.purchased(name))));
-          } else {
-            messenger.showSnackBar(SnackBar(content: Text(s.notEnoughCoins)));
-          }
-        },
-        icon: const CoinIcon(size: 16),
-        label: Text('$price'),
       );
     }
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: GlassCard(
-        padding: const EdgeInsets.all(10),
-        borderColor: selected ? AppColors.gold : null,
-        child: Row(
-          children: [
-            SizedBox(width: 92, height: 46, child: preview),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-            action,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BoardPreview extends StatelessWidget {
-  const _BoardPreview({required this.theme, required this.style});
-
-  final BoardTheme theme;
-  final PieceStyle style;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: Row(
-        children: [
-          for (final (index, piece) in const [
-            Piece.whiteKing,
-            Piece.blackQueen,
-          ].indexed)
-            Expanded(
-              child: ColoredBox(
-                color: index.isEven ? theme.light : theme.dark,
-                child: Padding(
-                  padding: const EdgeInsets.all(3),
-                  child: PieceView(piece: piece, style: style, shadow: false),
-                ),
-              ),
-            ),
-        ],
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      itemCount: games.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (context, index) => GameRecordTile(
+        record: games[index],
+        onTap: () =>
+            AppRoutes.push(context, GameReviewPage(record: games[index])),
       ),
     );
   }
@@ -392,6 +278,7 @@ class _StatsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final s = context.s;
     final stats = progress.stats;
     final items = <(IconData, String, String, Color)>[
@@ -405,7 +292,7 @@ class _StatsTab extends StatelessWidget {
         Icons.emoji_events_rounded,
         s.winsLabel,
         '${stats.wins}',
-        AppColors.gold,
+        palette.accent,
       ),
       (
         Icons.handshake_rounded,
@@ -435,7 +322,7 @@ class _StatsTab extends StatelessWidget {
         Icons.star_rounded,
         s.starsLabel,
         '${progress.totalStars}/${PlayerProgress.computerLevels * 3}',
-        AppColors.gold,
+        palette.accent,
       ),
       (
         Icons.school_rounded,

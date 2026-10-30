@@ -7,19 +7,25 @@ import '../../../../app/routes.dart';
 import '../../../../core/chess_ui/chess_board_view.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/board_theme.dart';
 import '../../../../core/utils/game_feedback.dart';
 import '../../../../core/widgets/royal_background.dart';
 import '../../../../core/widgets/royal_button.dart';
 import '../../../../engine/chess_engine.dart';
+import '../../../history/domain/game_record.dart';
+import '../../../history/presentation/history_cubit.dart';
 import '../../../progress/domain/reward_rules.dart';
 import '../../../progress/presentation/progress_cubit.dart';
+import '../../../progress/presentation/widgets/player_avatar.dart';
 import '../../../settings/domain/app_settings.dart';
 import '../../../settings/presentation/settings_cubit.dart';
 import '../../../settings/presentation/settings_page.dart';
 import '../../domain/ai_level.dart';
 import '../../domain/chess_ai_service.dart';
 import '../../domain/game_config.dart';
+import '../../domain/game_snapshot.dart';
+import '../../domain/hint_wallet.dart';
 import '../cubit/game_cubit.dart';
 import '../cubit/game_state.dart';
 import '../widgets/coach_panel.dart';
@@ -30,9 +36,12 @@ import '../widgets/player_panel.dart';
 import '../widgets/prediction_panel.dart';
 
 class GamePage extends StatelessWidget {
-  const GamePage({super.key, required this.config});
+  const GamePage({super.key, required this.config, this.resumeFrom});
 
   final GameConfig config;
+
+  /// An unfinished game to continue.
+  final GameSnapshot? resumeFrom;
 
   @override
   Widget build(BuildContext context) {
@@ -41,10 +50,25 @@ class GamePage extends StatelessWidget {
         config: config,
         ai: context.read<ChessAiService>(),
         settings: context.read<SettingsCubit>().state,
+        hintWallet: _CoinHintWallet(context.read<ProgressCubit>()),
+        resumeFrom: resumeFrom,
       )..start(),
       child: const _GameView(),
     );
   }
+}
+
+/// Hints bought in the shop, kept in the player's progress.
+class _CoinHintWallet implements HintWallet {
+  _CoinHintWallet(this._progress);
+
+  final ProgressCubit _progress;
+
+  @override
+  int get balance => _progress.state.hintTokens;
+
+  @override
+  bool spend() => _progress.spendHintToken();
 }
 
 class _GameView extends StatefulWidget {
@@ -75,6 +99,13 @@ class _GameViewState extends State<_GameView> {
             capture: state.lastMove?.isCapture ?? false,
             check: state.checkSquare != null,
           ),
+        ),
+        BlocListener<GameCubit, GameState>(
+          listenWhen: (a, b) =>
+              a.moveCount != b.moveCount &&
+              b.outcome == null &&
+              b.config.mode != GameMode.lan,
+          listener: (context, state) => _saveProgress(),
         ),
         BlocListener<GameCubit, GameState>(
           listenWhen: (a, b) =>
@@ -146,19 +177,34 @@ class _GameViewState extends State<_GameView> {
     );
   }
 
+  /// Keeps the game in progress so it can be resumed from the home screen.
+  void _saveProgress() {
+    final history = context.read<HistoryCubit>();
+    final snapshot = _cubit.snapshot();
+    if (snapshot != null) {
+      history.saveUnfinished(snapshot);
+    } else {
+      history.discardUnfinished();
+    }
+  }
+
   Future<void> _confirmLeave() async {
     final s = context.s;
     if (_cubit.state.isOver || _cubit.state.moveCount == 0) {
       Navigator.of(context).pop();
       return;
     }
+    final resumable = _cubit.config.mode != GameMode.lan;
     final leave = await confirm(
       context,
       title: s.confirmLeaveTitle,
-      body: s.confirmLeaveBody,
+      body: resumable ? s.confirmLeaveSavedBody : s.confirmLeaveBody,
       confirmLabel: s.leave,
     );
-    if (leave && mounted) Navigator.of(context).pop();
+    if (!leave || !mounted) return;
+    // Save again so the clocks are stored as they are now.
+    if (resumable && !_cubit.state.isOver) _saveProgress();
+    Navigator.of(context).pop();
   }
 
   Future<void> _onPromotion(BuildContext context, GameState state) async {
@@ -187,6 +233,18 @@ class _GameViewState extends State<_GameView> {
   }
 
   Future<void> _onGameOver(BuildContext context, GameState state) async {
+    final config = _cubit.config;
+    final s = context.s;
+    context.read<HistoryCubit>().record(
+      GameRecord.finished(
+        config: config,
+        moves: _cubit.moves,
+        outcome: state.outcome!,
+        playedAt: DateTime.now(),
+        whiteName: _playerName(s, config, PieceColor.white),
+        blackName: _playerName(s, config, PieceColor.black),
+      ),
+    );
     final summary = _cubit.summary();
     _lastRewards = summary == null
         ? null
@@ -342,6 +400,7 @@ class _GameLayout extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final palette = context.palette;
         final reserved = 330.0 + (predictions ? 18 : 0);
         final boardSize = min(
           constraints.maxWidth - 16,
@@ -351,8 +410,8 @@ class _GameLayout extends StatelessWidget {
         final showCoach = infoNotes.isNotEmpty;
 
         Widget panel(PieceColor color) => PlayerPanel(
-          name: _nameOf(s, config, color),
-          subtitle: _subtitleOf(s, config, color),
+          name: _playerName(s, config, color),
+          subtitle: _subtitleOf(context, s, config, color),
           color: color,
           captured: state.capturedBy(color),
           advantage: state.materialBalance * color.sign,
@@ -360,6 +419,9 @@ class _GameLayout extends StatelessWidget {
           pieceStyle: pieceStyle,
           clock: config.timeControl == null ? null : cubit.clockReading,
           thinking: state.aiThinking && state.turn == color,
+          avatar: _isLocalPlayer(config, color)
+              ? PlayerAvatar(size: 40, color: color)
+              : null,
         );
 
         return Column(
@@ -423,11 +485,11 @@ class _GameLayout extends StatelessWidget {
                   padding: EdgeInsets.zero,
                   children: [
                     if (state.reviewingMove || state.hintLoading)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(bottom: 8),
                         child: LinearProgressIndicator(
                           minHeight: 3,
-                          color: AppColors.gold,
+                          color: palette.accent,
                           backgroundColor: Colors.transparent,
                         ),
                       ),
@@ -463,18 +525,24 @@ class _GameLayout extends StatelessWidget {
     label: label,
   );
 
-  static String _nameOf(AppStrings s, GameConfig config, PieceColor color) {
-    final name = color == PieceColor.white
-        ? config.whiteName
-        : config.blackName;
-    return (name == null || name.isEmpty) ? s.colorName(color) : name;
-  }
+  /// The device owner's side in games against the computer or over the
+  /// network; pass-and-play games have no single owner.
+  static bool _isLocalPlayer(GameConfig config, PieceColor color) =>
+      config.mode != GameMode.local && color == config.playerColor;
 
   static String? _subtitleOf(
+    BuildContext context,
     AppStrings s,
     GameConfig config,
     PieceColor color,
   ) {
+    if (_isLocalPlayer(config, color)) {
+      return displayTitle(
+        s,
+        context.read<SettingsCubit>().state,
+        context.read<ProgressCubit>().state,
+      );
+    }
     final level = config.aiLevel;
     if (config.mode == GameMode.computer &&
         level != null &&
@@ -498,6 +566,7 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final s = context.s;
     final config = state.config;
     final title = switch (config.mode) {
@@ -556,7 +625,7 @@ class _TopBar extends StatelessWidget {
               onPressed: onShowResult,
               icon: const Icon(Icons.emoji_events_rounded),
               label: Text(s.rewards),
-              style: TextButton.styleFrom(foregroundColor: AppColors.gold),
+              style: TextButton.styleFrom(foregroundColor: palette.accent),
             ),
           CircleIconButton(
             icon: Icons.tune_rounded,
@@ -591,6 +660,7 @@ class _ActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final s = context.s;
     final cubit = context.read<GameCubit>();
     final settingsCubit = context.read<SettingsCubit>();
@@ -603,9 +673,9 @@ class _ActionBar extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(8, 8, 8, 4),
       padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.85),
+        color: palette.surface.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.outline),
+        border: Border.all(color: palette.outline),
       ),
       child: Row(
         children: [
@@ -746,6 +816,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final enabled = onTap != null;
     final tint = enabled
         ? (color ?? AppColors.textPrimary)
@@ -762,8 +833,8 @@ class _ActionButton extends StatelessWidget {
               Badge(
                 isLabelVisible: badge != null,
                 label: Text(badge ?? ''),
-                backgroundColor: AppColors.gold,
-                textColor: AppColors.background,
+                backgroundColor: palette.accent,
+                textColor: palette.background,
                 child: Icon(icon, color: tint, size: 24),
               ),
               const SizedBox(height: 4),
@@ -816,4 +887,10 @@ class _ReactionBurst extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The name shown for [color], or the colour itself when unnamed.
+String _playerName(AppStrings s, GameConfig config, PieceColor color) {
+  final name = color == PieceColor.white ? config.whiteName : config.blackName;
+  return (name == null || name.isEmpty) ? s.colorName(color) : name;
 }

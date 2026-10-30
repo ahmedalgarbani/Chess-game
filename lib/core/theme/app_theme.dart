@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
+import 'app_palette.dart';
 
 /// Builds the app-wide Material theme.
 abstract final class AppTheme {
   static const String fontFamily = 'Tajawal';
   static const String displayFontFamily = 'ArefRuqaa';
 
-  static ThemeData build() {
-    const scheme = ColorScheme.dark(
-      primary: AppColors.gold,
-      onPrimary: Color(0xFF231A05),
+  static ThemeData build([AppPalette palette = AppPalette.royal]) {
+    final scheme = ColorScheme.dark(
+      primary: palette.accent,
+      onPrimary: palette.onAccent,
       secondary: AppColors.emerald,
       onSecondary: Color(0xFF04201A),
       error: AppColors.ruby,
-      surface: AppColors.surface,
+      surface: palette.surface,
       onSurface: AppColors.textPrimary,
     );
 
@@ -23,7 +24,8 @@ abstract final class AppTheme {
       brightness: Brightness.dark,
       colorScheme: scheme,
       fontFamily: fontFamily,
-      scaffoldBackgroundColor: AppColors.background,
+      scaffoldBackgroundColor: palette.background,
+      extensions: [palette],
     );
 
     final text = base.textTheme.apply(
@@ -65,30 +67,30 @@ abstract final class AppTheme {
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: AppColors.surface,
+        backgroundColor: palette.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(28),
-          side: const BorderSide(color: AppColors.outline),
+          side: BorderSide(color: palette.outline),
         ),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: AppColors.surface,
-        modalBackgroundColor: AppColors.surface,
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: palette.surface,
+        modalBackgroundColor: palette.surface,
         showDragHandle: true,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
-              ? AppColors.background
+              ? palette.background
               : AppColors.textSecondary,
         ),
         trackColor: WidgetStateProperty.resolveWith(
           (states) => states.contains(WidgetState.selected)
-              ? AppColors.gold
-              : AppColors.surfaceHigh,
+              ? palette.accent
+              : palette.surfaceHigh,
         ),
         trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
       ),
@@ -101,20 +103,20 @@ abstract final class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: AppColors.outline),
+          borderSide: BorderSide(color: palette.outline),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: AppColors.outline),
+          borderSide: BorderSide(color: palette.outline),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: AppColors.gold, width: 1.5),
+          borderSide: BorderSide(color: palette.accent, width: 1.5),
         ),
         hintStyle: const TextStyle(color: AppColors.textMuted),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.surfaceHigh,
+        backgroundColor: palette.surfaceHigh,
         contentTextStyle: const TextStyle(
           fontFamily: fontFamily,
           color: AppColors.textPrimary,
@@ -125,20 +127,20 @@ abstract final class AppTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceGlass,
-        selectedColor: AppColors.gold,
+        selectedColor: palette.accent,
         labelStyle: const TextStyle(
           fontFamily: fontFamily,
           fontWeight: FontWeight.w700,
         ),
-        side: const BorderSide(color: AppColors.outline),
+        side: BorderSide(color: palette.outline),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
-      tabBarTheme: const TabBarThemeData(
-        labelColor: AppColors.background,
+      tabBarTheme: TabBarThemeData(
+        labelColor: palette.background,
         unselectedLabelColor: AppColors.textSecondary,
         dividerColor: Colors.transparent,
         indicatorSize: TabBarIndicatorSize.tab,
-        labelStyle: TextStyle(
+        labelStyle: const TextStyle(
           fontFamily: fontFamily,
           fontWeight: FontWeight.w800,
         ),
@@ -147,26 +149,24 @@ abstract final class AppTheme {
         style: ButtonStyle(
           backgroundColor: WidgetStateProperty.resolveWith(
             (states) => states.contains(WidgetState.selected)
-                ? AppColors.gold
+                ? palette.accent
                 : Colors.transparent,
           ),
           foregroundColor: WidgetStateProperty.resolveWith(
             (states) => states.contains(WidgetState.selected)
-                ? const Color(0xFF231A05)
+                ? palette.onAccent
                 : AppColors.textPrimary,
           ),
-          side: const WidgetStatePropertyAll(
-            BorderSide(color: AppColors.outline),
-          ),
+          side: WidgetStatePropertyAll(BorderSide(color: palette.outline)),
           textStyle: const WidgetStatePropertyAll(
             TextStyle(fontFamily: fontFamily, fontWeight: FontWeight.w800),
           ),
         ),
       ),
-      sliderTheme: const SliderThemeData(
-        activeTrackColor: AppColors.gold,
-        thumbColor: AppColors.goldLight,
-        inactiveTrackColor: AppColors.surfaceHigh,
+      sliderTheme: SliderThemeData(
+        activeTrackColor: palette.accent,
+        thumbColor: palette.accentLight,
+        inactiveTrackColor: palette.surfaceHigh,
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../engine/chess_engine.dart';
 
 /// A horizontally scrolling list of the moves played, newest visible.
@@ -64,6 +65,7 @@ class _MoveHistoryStripState extends State<MoveHistoryStrip> {
           itemCount: pairs.length,
           separatorBuilder: (_, _) => const SizedBox(width: 6),
           itemBuilder: (context, index) {
+            final palette = context.palette;
             final (number, white, black) = pairs[index];
             final isLast = index == pairs.length - 1;
             return Container(
@@ -71,11 +73,11 @@ class _MoveHistoryStripState extends State<MoveHistoryStrip> {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: isLast
-                    ? AppColors.gold.withValues(alpha: 0.16)
+                    ? palette.accent.withValues(alpha: 0.16)
                     : AppColors.surfaceGlass,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: isLast ? AppColors.gold : AppColors.outline,
+                  color: isLast ? palette.accent : palette.outline,
                 ),
               ),
               child: Text.rich(

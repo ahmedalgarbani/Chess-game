@@ -77,7 +77,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "v1.0.0-build.${{ github.run_number }}" ruqa-chess.apk \
+          version=$(sed -n 's/^version: *\([0-9.]*\).*/\1/p' pubspec.yaml)
+          gh release create "v$version-build.${{ github.run_number }}" ruqa-chess.apk \
             --target "${{ github.sha }}" \
             --title "رقعة — نسخة ${{ github.run_number }}" \
             --notes-file .github/release-notes.md \

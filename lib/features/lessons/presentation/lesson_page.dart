@@ -5,6 +5,7 @@ import '../../../app/routes.dart';
 import '../../../core/chess_ui/chess_board_view.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/board_theme.dart';
 import '../../../core/utils/game_feedback.dart';
 import '../../../core/widgets/badges.dart';
@@ -176,6 +177,7 @@ class _LessonView extends StatelessWidget {
   }
 
   Future<void> _onCompleted(BuildContext context, LessonState state) async {
+    final palette = context.palette;
     final s = context.s;
     final rewards = context.read<ProgressCubit>().completeLesson(
       state.lesson.id,
@@ -191,11 +193,7 @@ class _LessonView extends StatelessWidget {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        icon: const Icon(
-          Icons.emoji_events_rounded,
-          color: AppColors.gold,
-          size: 54,
-        ),
+        icon: Icon(Icons.emoji_events_rounded, color: palette.accent, size: 54),
         title: Text(s.lessonCompleted, textAlign: TextAlign.center),
         content: rewards == null
             ? Text(s.wellDone, textAlign: TextAlign.center)
@@ -273,6 +271,7 @@ class _InstructionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
       child: Container(
@@ -280,16 +279,13 @@ class _InstructionCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
-          color: AppColors.surface.withValues(alpha: 0.85),
-          border: Border.all(color: AppColors.outline),
+          color: palette.surface.withValues(alpha: 0.85),
+          border: Border.all(color: palette.outline),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(
-              Icons.record_voice_over_rounded,
-              color: AppColors.goldLight,
-            ),
+            Icon(Icons.record_voice_over_rounded, color: palette.accentLight),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -307,8 +303,8 @@ class _InstructionCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       context.s.starsLeft(starsLeft),
-                      style: const TextStyle(
-                        color: AppColors.gold,
+                      style: TextStyle(
+                        color: palette.accent,
                         fontWeight: FontWeight.w800,
                       ),
                     ),

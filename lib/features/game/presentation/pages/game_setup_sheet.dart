@@ -7,6 +7,7 @@ import '../../../../app/routes.dart';
 import '../../../../core/chess_ui/piece_painter.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/board_theme.dart';
 import '../../../../core/widgets/badges.dart';
 import '../../../../core/widgets/royal_button.dart';
@@ -91,6 +92,7 @@ class _ComputerSetupSheetState extends State<_ComputerSetupSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final s = context.s;
     final progress = context.watch<ProgressCubit>().state;
     final level = AiLevel.byNumber(_level);
@@ -115,8 +117,8 @@ class _ComputerSetupSheetState extends State<_ComputerSetupSheet> {
                   ),
                   Text(
                     s.approxRating(level.approxRating),
-                    style: const TextStyle(
-                      color: AppColors.goldLight,
+                    style: TextStyle(
+                      color: palette.accentLight,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -339,6 +341,7 @@ class ColorChoiceSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final s = context.s;
     Widget option(ColorChoice choice, String label, Widget icon) {
       final selected = choice == value;
@@ -350,11 +353,11 @@ class ColorChoiceSelector extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
               color: selected
-                  ? AppColors.gold.withValues(alpha: 0.18)
+                  ? palette.accent.withValues(alpha: 0.18)
                   : AppColors.surfaceGlass,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: selected ? AppColors.gold : AppColors.outline,
+                color: selected ? palette.accent : palette.outline,
                 width: selected ? 1.6 : 1,
               ),
             ),
@@ -384,11 +387,7 @@ class ColorChoiceSelector extends StatelessWidget {
         option(
           ColorChoice.random,
           s.random,
-          const Icon(
-            Icons.shuffle_rounded,
-            color: AppColors.goldLight,
-            size: 30,
-          ),
+          Icon(Icons.shuffle_rounded, color: palette.accentLight, size: 30),
         ),
         const SizedBox(width: 10),
         option(

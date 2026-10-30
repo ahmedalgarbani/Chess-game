@@ -108,8 +108,12 @@ class LanLobbyCubit extends Cubit<LanLobbyState> {
           mode: GameMode.lan,
           playerColor: hostColor,
           timeControl: timeControl,
-          whiteName: hostColor == PieceColor.white ? playerName : hello.name,
-          blackName: hostColor == PieceColor.white ? hello.name : playerName,
+          whiteName: hostColor == PieceColor.white
+              ? playerName
+              : _safeName(hello.name),
+          blackName: hostColor == PieceColor.white
+              ? _safeName(hello.name)
+              : playerName,
           lanConnection: connection,
         ),
       );
@@ -156,9 +160,9 @@ class LanLobbyCubit extends Cubit<LanLobbyState> {
               : TimeControl(minutes, welcome.incrementSeconds),
           whiteName: myColor == PieceColor.white
               ? playerName
-              : welcome.hostName,
+              : _safeName(welcome.hostName),
           blackName: myColor == PieceColor.white
-              ? welcome.hostName
+              ? _safeName(welcome.hostName)
               : playerName,
           lanConnection: connection,
         ),
@@ -169,6 +173,10 @@ class LanLobbyCubit extends Cubit<LanLobbyState> {
       emit(state.copyWith(phase: LanPhase.failed));
     }
   }
+
+  /// Trims a name received from the other device to a sensible length.
+  static String _safeName(String name) =>
+      String.fromCharCodes(name.trim().runes.take(20));
 
   void _ready(GameConfig config) {
     if (isClosed) return;

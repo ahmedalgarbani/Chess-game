@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/chess_ui/piece_painter.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/board_theme.dart';
 import '../../../../core/widgets/royal_button.dart';
 import '../../../../engine/chess_engine.dart';
@@ -65,12 +66,13 @@ Future<bool> showRiskyMoveDialog(
   BuildContext context,
   PendingRiskyMove pending,
 ) async {
+  final palette = context.palette;
   final s = context.s;
   final result = await showDialog<bool>(
     context: context,
     barrierDismissible: false,
     builder: (context) => AlertDialog(
-      icon: const Icon(Icons.shield_rounded, color: AppColors.gold, size: 40),
+      icon: Icon(Icons.shield_rounded, color: palette.accent, size: 40),
       title: Text(s.riskyTitle, textAlign: TextAlign.center),
       content: Column(
         mainAxisSize: MainAxisSize.min,

@@ -14,3 +14,10 @@ String formatPawns(int centipawns) {
   final pawns = (centipawns.abs() / 100).toStringAsFixed(1);
   return centipawns >= 0 ? '+$pawns' : '-$pawns';
 }
+
+/// Formats a date and time as `yyyy/mm/dd hh:mm`.
+String formatDateTime(DateTime time) {
+  String two(int value) => value.toString().padLeft(2, '0');
+  return '${time.year}/${two(time.month)}/${two(time.day)} '
+      '${two(time.hour)}:${two(time.minute)}';
+}

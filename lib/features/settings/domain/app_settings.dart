@@ -34,26 +34,39 @@ class AppSettings {
     this.sounds = true,
     this.boardThemeId = 'royal',
     this.pieceStyleId = 'royal',
+    this.appThemeId = 'royal',
+    this.avatarId = 'king',
+    this.frameId = 'classic',
+    this.titleId = '',
   });
 
-  /// Sensible assistance defaults for each experience level.
-  factory AppSettings.forExperience(
-    ExperienceLevel level, {
-    required AppLanguage language,
-    required String playerName,
-  }) {
+  /// Applies the assistance defaults of an experience level, keeping every
+  /// other preference (board, sounds, cosmetics, …) unchanged.
+  AppSettings withExperience(ExperienceLevel level) {
     final beginner = level == ExperienceLevel.beginner;
     final advanced = level == ExperienceLevel.advanced;
-    return AppSettings(
-      language: language,
+    return copyWith(
       experience: level,
-      playerName: playerName,
       learningMode: beginner,
       showLegalMoves: !advanced,
       highlightThreats: !advanced,
       blunderGuard: !advanced,
       allowUndo: !advanced,
       showPredictions: false,
+    );
+  }
+
+  /// Back to the free cosmetics, used when progress (and thus the purchased
+  /// items) is reset.
+  AppSettings withDefaultCosmetics() {
+    const defaults = AppSettings();
+    return copyWith(
+      boardThemeId: defaults.boardThemeId,
+      pieceStyleId: defaults.pieceStyleId,
+      appThemeId: defaults.appThemeId,
+      avatarId: defaults.avatarId,
+      frameId: defaults.frameId,
+      titleId: defaults.titleId,
     );
   }
 
@@ -83,6 +96,16 @@ class AppSettings {
   final String boardThemeId;
   final String pieceStyleId;
 
+  // Cosmetics bought in the shop (ownership lives in the player progress).
+  final String appThemeId;
+
+  /// The piece shown in the player's medallion.
+  final String avatarId;
+  final String frameId;
+
+  /// A purchased title shown instead of the rank title; empty for the rank.
+  final String titleId;
+
   bool get onboardingComplete => experience != null;
 
   AppSettings copyWith({
@@ -102,6 +125,10 @@ class AppSettings {
     bool? sounds,
     String? boardThemeId,
     String? pieceStyleId,
+    String? appThemeId,
+    String? avatarId,
+    String? frameId,
+    String? titleId,
   }) {
     return AppSettings(
       language: language ?? this.language,
@@ -120,6 +147,10 @@ class AppSettings {
       sounds: sounds ?? this.sounds,
       boardThemeId: boardThemeId ?? this.boardThemeId,
       pieceStyleId: pieceStyleId ?? this.pieceStyleId,
+      appThemeId: appThemeId ?? this.appThemeId,
+      avatarId: avatarId ?? this.avatarId,
+      frameId: frameId ?? this.frameId,
+      titleId: titleId ?? this.titleId,
     );
   }
 
@@ -140,6 +171,10 @@ class AppSettings {
     'sounds': sounds,
     'boardThemeId': boardThemeId,
     'pieceStyleId': pieceStyleId,
+    'appThemeId': appThemeId,
+    'avatarId': avatarId,
+    'frameId': frameId,
+    'titleId': titleId,
   };
 
   factory AppSettings.fromJson(Map<String, Object?> json) {
@@ -166,6 +201,10 @@ class AppSettings {
       sounds: flag('sounds', defaults.sounds),
       boardThemeId: json['boardThemeId'] as String? ?? defaults.boardThemeId,
       pieceStyleId: json['pieceStyleId'] as String? ?? defaults.pieceStyleId,
+      appThemeId: json['appThemeId'] as String? ?? defaults.appThemeId,
+      avatarId: json['avatarId'] as String? ?? defaults.avatarId,
+      frameId: json['frameId'] as String? ?? defaults.frameId,
+      titleId: json['titleId'] as String? ?? defaults.titleId,
     );
   }
 }

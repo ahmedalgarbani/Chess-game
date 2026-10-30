@@ -14,7 +14,12 @@ enum Achievement {
   friendlyGame(10),
   lanGame(20),
   dailyStreak3(30),
-  tenWins(50);
+  tenWins(50),
+  firstPurchase(20),
+  collector(100),
+  puzzles10(40),
+  allPuzzles(150),
+  dailyPuzzle(25);
 
   const Achievement(this.coins);
 

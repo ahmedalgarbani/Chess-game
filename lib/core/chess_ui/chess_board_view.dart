@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../engine/chess_engine.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 import '../theme/board_theme.dart';
 import 'piece_painter.dart';
 
@@ -233,6 +233,7 @@ class _ChessBoardViewState extends State<ChessBoardView>
         child: CustomPaint(
           painter: _BoardPainter(
             theme: widget.boardTheme,
+            palette: context.palette,
             flipped: widget.flipped,
             showCoordinates: widget.showCoordinates,
             selectedSquare: widget.selectedSquare,
@@ -352,6 +353,7 @@ class _ChessBoardViewState extends State<ChessBoardView>
 class _BoardPainter extends CustomPainter {
   _BoardPainter({
     required this.theme,
+    required this.palette,
     required this.flipped,
     required this.showCoordinates,
     required this.selectedSquare,
@@ -363,6 +365,9 @@ class _BoardPainter extends CustomPainter {
   });
 
   final BoardTheme theme;
+
+  /// The app theme, for the selection and star highlights.
+  final AppPalette palette;
   final bool flipped;
   final bool showCoordinates;
   final int? selectedSquare;
@@ -411,7 +416,7 @@ class _BoardPainter extends CustomPainter {
     if (selectedSquare != null) {
       canvas.drawRect(
         rectOf(selectedSquare!),
-        Paint()..color = AppColors.gold.withValues(alpha: 0.65),
+        Paint()..color = palette.accent.withValues(alpha: 0.65),
       );
     }
 
@@ -505,12 +510,12 @@ class _BoardPainter extends CustomPainter {
           )
           ..drawPath(
             path,
-            Paint()..shader = AppColors.goldGradient.createShader(rect),
+            Paint()..shader = palette.accentGradient.createShader(rect),
           )
           ..drawPath(
             path,
             Paint()
-              ..color = AppColors.goldDeep
+              ..color = palette.accentDeep
               ..style = PaintingStyle.stroke
               ..strokeWidth = s * 0.025,
           );
@@ -578,6 +583,7 @@ class _BoardPainter extends CustomPainter {
   @override
   bool shouldRepaint(_BoardPainter old) =>
       old.theme != theme ||
+      old.palette != palette ||
       old.flipped != flipped ||
       old.showCoordinates != showCoordinates ||
       old.selectedSquare != selectedSquare ||

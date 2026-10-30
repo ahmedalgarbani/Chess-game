@@ -5,13 +5,18 @@ import '../../../app/routes.dart';
 import '../../../core/chess_ui/piece_painter.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/board_theme.dart';
 import '../../../core/widgets/badges.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/royal_background.dart';
 import '../../../core/widgets/royal_button.dart';
 import '../../../engine/chess_engine.dart';
+import '../../game/domain/game_config.dart';
+import '../../game/domain/game_snapshot.dart';
+import '../../game/presentation/pages/game_page.dart';
 import '../../game/presentation/pages/game_setup_sheet.dart';
+import '../../history/presentation/history_cubit.dart';
 import '../../lan/presentation/lan_lobby_page.dart';
 import '../../lessons/domain/lesson_catalog.dart';
 import '../../lessons/presentation/lessons_page.dart';
@@ -21,15 +26,20 @@ import '../../progress/domain/player_rank.dart';
 import '../../progress/domain/reward_rules.dart';
 import '../../progress/presentation/profile_page.dart';
 import '../../progress/presentation/progress_cubit.dart';
+import '../../progress/presentation/widgets/player_avatar.dart';
+import '../../puzzles/domain/puzzle_catalog.dart';
+import '../../puzzles/presentation/puzzles_page.dart';
 import '../../settings/domain/app_settings.dart';
 import '../../settings/presentation/settings_cubit.dart';
 import '../../settings/presentation/settings_page.dart';
+import '../../shop/presentation/shop_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final s = context.s;
     final progress = context.watch<ProgressCubit>().state;
     final settings = context.watch<SettingsCubit>().state;
@@ -37,6 +47,8 @@ class HomePage extends StatelessWidget {
     final lessonsDone = progress.completedLessons.length;
     final totalLessons = LessonCatalog.lessons.length;
     final showLearning = settings.learningMode && lessonsDone < totalLessons;
+    final now = DateTime.now();
+    final unfinished = context.watch<HistoryCubit>().state.unfinished;
 
     return Scaffold(
       body: RoyalBackground(
@@ -46,8 +58,16 @@ class HomePage extends StatelessWidget {
             children: [
               _Header(progress: progress, settings: settings),
               const SizedBox(height: 18),
+              if (unfinished != null) ...[
+                _ResumeCard(game: unfinished),
+                const SizedBox(height: 14),
+              ],
               if (canClaim) ...[
                 _DailyRewardCard(progress: progress),
+                const SizedBox(height: 14),
+              ],
+              if (!progress.solvedDailyPuzzle(now)) ...[
+                DailyPuzzleCard(puzzle: PuzzleCatalog.daily(now), done: false),
                 const SizedBox(height: 14),
               ],
               if (showLearning) ...[
@@ -58,22 +78,18 @@ class HomePage extends StatelessWidget {
                 title: s.modeComputer,
                 subtitle: s.modeComputerSubtitle(progress.highestUnlockedLevel),
                 piece: Piece.blackKing,
-                accent: AppColors.gold,
+                accent: palette.accent,
                 onTap: () => AppRoutes.push(context, const LevelsPage()),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.star_rounded,
-                      color: AppColors.gold,
-                      size: 20,
-                    ),
+                    Icon(Icons.star_rounded, color: palette.accent, size: 20),
                     const SizedBox(width: 4),
                     Text(
                       '${progress.totalStars} / ${PlayerProgress.computerLevels * 3}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: AppColors.goldLight,
+                        color: palette.accentLight,
                       ),
                     ),
                   ],
@@ -120,11 +136,38 @@ class HomePage extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _ModeCard(
+                      title: s.puzzlesTitle,
+                      subtitle: s.modePuzzlesSubtitle(
+                        progress.solvedPuzzles.length,
+                        PuzzleCatalog.puzzles.length,
+                      ),
+                      piece: Piece.blackKnight,
+                      accent: AppColors.sapphire,
+                      onTap: () => AppRoutes.push(context, const PuzzlesPage()),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ModeCard(
                       title: s.quickPlay,
                       subtitle: s.quickPlaySubtitle,
                       piece: Piece.whiteQueen,
                       accent: AppColors.ruby,
                       onTap: () => showComputerGameSheet(context),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _ModeCard(
+                      title: s.shopTitle,
+                      subtitle: s.modeShopSubtitle,
+                      piece: Piece.blackQueen,
+                      accent: AppColors.amber,
+                      onTap: () => AppRoutes.push(context, const ShopPage()),
                     ),
                   ),
                 ],
@@ -134,7 +177,7 @@ class HomePage extends StatelessWidget {
                 title: s.modeProfile,
                 subtitle: s.modeProfileSubtitle,
                 piece: Piece.whiteBishop,
-                accent: AppColors.goldLight,
+                accent: palette.accentLight,
                 onTap: () => AppRoutes.push(context, const ProfilePage()),
                 large: true,
               ),
@@ -154,6 +197,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final s = context.s;
     final level = progress.level;
     final start = PlayerRank.xpForLevel(level);
@@ -165,7 +209,7 @@ class _Header extends StatelessWidget {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              const PieceMedallion(piece: Piece.whiteKing, size: 58),
+              const PlayerAvatar(size: 58),
               PositionedDirectional(
                 bottom: -4,
                 end: -4,
@@ -175,14 +219,14 @@ class _Header extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    gradient: AppColors.goldGradient,
+                    gradient: palette.accentGradient,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.background, width: 2),
+                    border: Border.all(color: palette.background, width: 2),
                   ),
                   child: Text(
                     '$level',
-                    style: const TextStyle(
-                      color: Color(0xFF2A1C02),
+                    style: TextStyle(
+                      color: palette.onAccent,
                       fontWeight: FontWeight.w900,
                       fontSize: 12,
                     ),
@@ -203,7 +247,7 @@ class _Header extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
-                '${s.rankTitle(progress.title)} · ${s.xpProgress(progress.xp - start, end - start)}',
+                '${displayTitle(s, settings, progress)} · ${s.xpProgress(progress.xp - start, end - start)}',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 6),
@@ -222,7 +266,10 @@ class _Header extends StatelessWidget {
               onPressed: () => AppRoutes.push(context, const SettingsPage()),
             ),
             const SizedBox(height: 8),
-            CoinChip(coins: progress.coins, compact: true),
+            GestureDetector(
+              onTap: () => AppRoutes.push(context, const ShopPage()),
+              child: CoinChip(coins: progress.coins, compact: true),
+            ),
           ],
         ),
       ],
@@ -237,32 +284,23 @@ class _DailyRewardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final s = context.s;
-    final last = progress.lastDailyClaim;
-    final now = DateTime.now();
-    final continues =
-        last != null &&
-        DateTime(
-              now.year,
-              now.month,
-              now.day,
-            ).difference(DateTime(last.year, last.month, last.day)).inDays ==
-            1;
-    final nextStreak = continues ? progress.dailyStreak + 1 : 1;
+    final nextStreak = RewardRules.nextDailyStreak(progress, DateTime.now());
     return GlassCard(
-      borderColor: AppColors.gold.withValues(alpha: 0.6),
+      borderColor: palette.accent.withValues(alpha: 0.6),
       gradient: LinearGradient(
         colors: [
-          AppColors.gold.withValues(alpha: 0.25),
-          AppColors.gold.withValues(alpha: 0.06),
+          palette.accent.withValues(alpha: 0.25),
+          palette.accent.withValues(alpha: 0.06),
         ],
       ),
       padding: const EdgeInsets.all(14),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.card_giftcard_rounded,
-            color: AppColors.goldLight,
+            color: palette.accentLight,
             size: 38,
           ),
           const SizedBox(width: 12),
@@ -296,6 +334,95 @@ class _DailyRewardCard extends StatelessWidget {
                 ).showSnackBar(SnackBar(content: Text(s.dailyClaimed(coins))));
               }
             },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ResumeCard extends StatelessWidget {
+  const _ResumeCard({required this.game});
+
+  final GameSnapshot game;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.s;
+    final palette = context.palette;
+    final config = game.config;
+    final opponent = config.mode == GameMode.local
+        ? s.modeLocal
+        : (config.playerColor == PieceColor.white
+                  ? config.blackName
+                  : config.whiteName) ??
+              s.colorName(config.playerColor.opposite);
+    return GlassCard(
+      borderColor: AppColors.emerald.withValues(alpha: 0.6),
+      gradient: LinearGradient(
+        colors: [
+          AppColors.emerald.withValues(alpha: 0.25),
+          AppColors.emerald.withValues(alpha: 0.05),
+        ],
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.play_circle_fill_rounded,
+                color: AppColors.emerald,
+                size: 38,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      s.resumeGame,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      s.resumeGameSubtitle(
+                        opponent,
+                        (game.moves.length + 1) ~/ 2,
+                      ),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: RoyalButton(
+                  label: s.resumeGame,
+                  icon: Icons.play_arrow_rounded,
+                  onPressed: () => AppRoutes.push(
+                    context,
+                    GamePage(config: config, resumeFrom: game),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              TextButton(
+                onPressed: () =>
+                    context.read<HistoryCubit>().discardUnfinished(),
+                style: TextButton.styleFrom(
+                  foregroundColor: palette.accentLight,
+                ),
+                child: Text(s.discard),
+              ),
+            ],
           ),
         ],
       ),

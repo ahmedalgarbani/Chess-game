@@ -21,14 +21,10 @@ class SettingsCubit extends Cubit<AppSettings> {
   }) {
     update(
       (current) =>
-          AppSettings.forExperience(
-            level,
-            language: current.language,
-            playerName: playerName,
-          ).copyWith(
-            boardThemeId: current.boardThemeId,
-            pieceStyleId: current.pieceStyleId,
-          ),
+          current.withExperience(level).copyWith(playerName: playerName),
     );
   }
+
+  void setExperience(ExperienceLevel level) =>
+      update((current) => current.withExperience(level));
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:chess_game/engine/chess_ai.dart';
 import 'package:chess_game/engine/chess_engine.dart';
 import 'package:chess_game/features/game/domain/ai_level.dart';
@@ -5,6 +7,8 @@ import 'package:chess_game/features/game/domain/chess_ai_service.dart';
 import 'package:chess_game/features/game/domain/coach/coach_note.dart';
 import 'package:chess_game/features/game/domain/game_config.dart';
 import 'package:chess_game/features/game/domain/game_outcome.dart';
+import 'package:chess_game/features/game/domain/game_snapshot.dart';
+import 'package:chess_game/features/game/domain/hint_wallet.dart';
 import 'package:chess_game/features/game/presentation/cubit/game_cubit.dart';
 import 'package:chess_game/features/progress/domain/game_summary.dart';
 import 'package:chess_game/features/settings/domain/app_settings.dart';
@@ -47,6 +51,51 @@ class FakeAi implements ChessAiService {
   }
 }
 
+/// An engine that always fails, to check the game never gets stuck.
+class BrokenAi extends FakeAi {
+  @override
+  Future<EngineMove?> chooseMove(
+    PositionSnapshot position,
+    EngineSkill skill,
+  ) => Future.error(StateError('engine crashed'));
+
+  @override
+  Future<PositionAnalysis> analyze(
+    PositionSnapshot position, {
+    AnalysisStrength strength = AnalysisStrength.normal,
+  }) => Future.error(StateError('engine crashed'));
+}
+
+/// An engine whose analysis completes only when the test says so.
+class SlowAi extends FakeAi {
+  final pending = <Completer<PositionAnalysis>>[];
+
+  @override
+  Future<PositionAnalysis> analyze(
+    PositionSnapshot position, {
+    AnalysisStrength strength = AnalysisStrength.normal,
+  }) {
+    final completer = Completer<PositionAnalysis>();
+    pending.add(completer);
+    return completer.future;
+  }
+}
+
+/// Purchased hints held in memory.
+class FakeWallet implements HintWallet {
+  FakeWallet(this.balance);
+
+  @override
+  int balance;
+
+  @override
+  bool spend() {
+    if (balance == 0) return false;
+    balance--;
+    return true;
+  }
+}
+
 int sq(String name) => Square.parse(name);
 
 Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 20));
@@ -55,12 +104,16 @@ GameCubit makeCubit(
   GameConfig config, {
   AppSettings settings = const AppSettings(learningMode: false),
   FakeAi? ai,
+  HintWallet? wallet,
+  GameSnapshot? resumeFrom,
 }) {
   return GameCubit(
     config: config,
     ai: ai ?? FakeAi(),
     settings: settings,
     computerPause: Duration.zero,
+    hintWallet: wallet,
+    resumeFrom: resumeFrom,
   )..start();
 }
 
@@ -206,6 +259,42 @@ void main() {
     await cubit.close();
   });
 
+  test('purchased hints are spent after the free ones', () async {
+    final wallet = FakeWallet(2);
+    final cubit = makeCubit(
+      GameConfig(mode: GameMode.computer, aiLevel: AiLevel.byNumber(1)),
+      wallet: wallet,
+    );
+    expect(cubit.hintsLeft, GameCubit.hintLimit + 2);
+    for (var i = 0; i < GameCubit.hintLimit; i++) {
+      await cubit.requestHint();
+    }
+    expect(wallet.balance, 2);
+    await cubit.requestHint();
+    expect(wallet.balance, 1);
+    expect(cubit.state.hintsUsed, GameCubit.hintLimit + 1);
+    await cubit.requestHint();
+    expect(wallet.balance, 0);
+    expect(cubit.hintsLeft, 0);
+    await cubit.requestHint();
+    expect(cubit.state.hintsUsed, GameCubit.hintLimit + 2);
+    await cubit.close();
+  });
+
+  test('learning mode never spends purchased hints', () async {
+    final wallet = FakeWallet(1);
+    final cubit = makeCubit(
+      GameConfig(mode: GameMode.computer, aiLevel: AiLevel.byNumber(1)),
+      settings: const AppSettings(learningMode: true),
+      wallet: wallet,
+    );
+    for (var i = 0; i < GameCubit.hintLimit + 2; i++) {
+      await cubit.requestHint();
+    }
+    expect(wallet.balance, 1);
+    await cubit.close();
+  });
+
   test('the coach explains moves in learning mode', () async {
     final cubit = makeCubit(
       GameConfig(mode: GameMode.computer, aiLevel: AiLevel.byNumber(1)),
@@ -229,6 +318,108 @@ void main() {
     cubit.resign();
     expect(cubit.state.outcome!.winner, PieceColor.black);
     expect(cubit.summary()!.result, PlayerResult.loss);
+    await cubit.close();
+  });
+
+  test('a failing engine still lets the computer move', () async {
+    final cubit = makeCubit(
+      GameConfig(mode: GameMode.computer, aiLevel: AiLevel.byNumber(1)),
+      ai: BrokenAi(),
+    );
+    cubit.dropPiece(sq('e2'), sq('e4'));
+    await settle();
+    await settle();
+    expect(cubit.state.moveCount, 2);
+    expect(cubit.state.aiThinking, isFalse);
+    await cubit.requestHint();
+    expect(cubit.state.hintLoading, isFalse);
+    expect(cubit.state.hint, isNull);
+    await cubit.close();
+  });
+
+  test('a hint computed for an old position is discarded', () async {
+    final ai = SlowAi();
+    final cubit = makeCubit(const GameConfig(mode: GameMode.local), ai: ai);
+    final hint = cubit.requestHint();
+    cubit.dropPiece(sq('e2'), sq('e4'));
+    await settle();
+    final board = ChessAi.replay(startingFen, const []);
+    ai.pending.first.complete(ChessAi.analyze(board, maxDepth: 1));
+    await hint;
+    expect(cubit.state.hint, isNull);
+    expect(cubit.state.hintsUsed, 0);
+    await cubit.close();
+  });
+
+  test('an unfinished game can be saved and resumed', () async {
+    final config = GameConfig(
+      mode: GameMode.computer,
+      aiLevel: AiLevel.byNumber(1),
+      timeControl: const TimeControl(5),
+    );
+    final cubit = makeCubit(config);
+    expect(cubit.snapshot(), isNull);
+    cubit.dropPiece(sq('e2'), sq('e4'));
+    await settle();
+    await settle();
+    await cubit.requestHint();
+    final snapshot = cubit.snapshot()!;
+    expect(snapshot.moves, hasLength(2));
+    expect(snapshot.hintsUsed, 1);
+    expect(snapshot.whiteTime, isNotNull);
+    await cubit.close();
+
+    final resumed = makeCubit(
+      snapshot.config,
+      resumeFrom: GameSnapshot(
+        config: snapshot.config,
+        moves: snapshot.moves,
+        savedAt: snapshot.savedAt,
+        whiteTime: const Duration(minutes: 2),
+        blackTime: const Duration(minutes: 4),
+        hintsUsed: snapshot.hintsUsed,
+      ),
+    );
+    expect(resumed.state.moveCount, 2);
+    expect(resumed.state.turn, PieceColor.white);
+    expect(resumed.state.history.first.san, 'e4');
+    expect(resumed.state.hintsUsed, 1);
+    expect(resumed.clockReading.value?.running, PieceColor.white);
+    expect(resumed.clockReading.value!.black, const Duration(minutes: 4));
+    expect(resumed.moves, snapshot.moves);
+
+    // Starting over forgets the saved moves.
+    resumed.restart();
+    expect(resumed.state.moveCount, 0);
+    expect(resumed.snapshot(), isNull);
+    await resumed.close();
+  });
+
+  test('resuming with the computer to move lets it play', () async {
+    final resumed = makeCubit(
+      GameConfig(mode: GameMode.computer, aiLevel: AiLevel.byNumber(1)),
+      resumeFrom: GameSnapshot(
+        config: GameConfig(
+          mode: GameMode.computer,
+          aiLevel: AiLevel.byNumber(1),
+        ),
+        moves: const ['e2e4'],
+        savedAt: DateTime(2026),
+      ),
+    );
+    await settle();
+    await settle();
+    expect(resumed.state.moveCount, 2);
+    await resumed.close();
+  });
+
+  test('finished games are not saved for later', () async {
+    final cubit = makeCubit(const GameConfig(mode: GameMode.local));
+    cubit.dropPiece(sq('e2'), sq('e4'));
+    await settle();
+    expect(cubit.snapshot(), isNotNull);
+    cubit.resign();
+    expect(cubit.snapshot(), isNull);
     await cubit.close();
   });
 }

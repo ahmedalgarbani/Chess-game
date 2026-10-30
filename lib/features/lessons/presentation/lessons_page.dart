@@ -5,6 +5,7 @@ import '../../../app/routes.dart';
 import '../../../core/chess_ui/piece_painter.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/board_theme.dart';
 import '../../../core/widgets/badges.dart';
 import '../../../core/widgets/glass_card.dart';
@@ -129,20 +130,21 @@ class _LessonTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final s = context.s;
     return GlassCard(
       onTap: onTap,
       padding: const EdgeInsets.all(12),
       borderColor: current
-          ? AppColors.gold
+          ? palette.accent
           : done
           ? AppColors.emerald.withValues(alpha: 0.5)
           : null,
       gradient: current
           ? LinearGradient(
               colors: [
-                AppColors.gold.withValues(alpha: 0.2),
-                AppColors.gold.withValues(alpha: 0.04),
+                palette.accent.withValues(alpha: 0.2),
+                palette.accent.withValues(alpha: 0.04),
               ],
             )
           : null,
@@ -154,9 +156,9 @@ class _LessonTile extends StatelessWidget {
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.surfaceHigh,
+              color: palette.surfaceHigh,
               border: Border.all(
-                color: done ? AppColors.emerald : AppColors.outline,
+                color: done ? AppColors.emerald : palette.outline,
                 width: 2,
               ),
             ),
@@ -197,7 +199,7 @@ class _LessonTile extends StatelessWidget {
               current
                   ? Icons.play_circle_fill_rounded
                   : Icons.chevron_right_rounded,
-              color: current ? AppColors.gold : AppColors.textMuted,
+              color: current ? palette.accent : AppColors.textMuted,
               size: current ? 30 : 24,
             ),
         ],

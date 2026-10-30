@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
+import '../theme/app_palette.dart';
 
 /// The signature backdrop: a midnight gradient overlaid with a subtle
 /// Islamic geometric pattern of eight-pointed stars.
@@ -14,22 +14,28 @@ class RoyalBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return DecoratedBox(
-      decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+      decoration: BoxDecoration(gradient: palette.backgroundGradient),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const RepaintBoundary(
-            child: CustomPaint(painter: GeometricPatternPainter()),
+          RepaintBoundary(
+            child: CustomPaint(
+              painter: GeometricPatternPainter(color: palette.pattern),
+            ),
           ),
           if (glow)
-            const IgnorePointer(
+            IgnorePointer(
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
-                    center: Alignment(0, -1.1),
+                    center: const Alignment(0, -1.1),
                     radius: 1.1,
-                    colors: [Color(0x33E9B44C), Color(0x00E9B44C)],
+                    colors: [
+                      palette.accent.withValues(alpha: 0.2),
+                      palette.accent.withValues(alpha: 0),
+                    ],
                   ),
                 ),
               ),

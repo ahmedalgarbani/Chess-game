@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../engine/chess_ai.dart';
 import '../../../../engine/chess_engine.dart';
@@ -49,6 +50,7 @@ class _EvaluationBarState extends State<EvaluationBar> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final current = widget.analysis;
     if (current != null) _share = whiteWinShare(current);
     return Directionality(
@@ -60,7 +62,7 @@ class _EvaluationBarState extends State<EvaluationBar> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              const ColoredBox(color: Color(0xFF0E1230)),
+              ColoredBox(color: palette.backgroundBottom),
               TweenAnimationBuilder<double>(
                 tween: Tween(end: _share),
                 duration: const Duration(milliseconds: 600),
@@ -77,7 +79,7 @@ class _EvaluationBarState extends State<EvaluationBar> {
                   ),
                 ),
               ),
-              Center(child: Container(width: 2, color: AppColors.gold)),
+              Center(child: Container(width: 2, color: palette.accent)),
             ],
           ),
         ),

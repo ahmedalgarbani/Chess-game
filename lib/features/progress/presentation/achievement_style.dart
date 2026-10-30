@@ -20,14 +20,23 @@ extension AchievementStyle on Achievement {
     Achievement.lanGame => Icons.wifi_rounded,
     Achievement.dailyStreak3 => Icons.local_fire_department_rounded,
     Achievement.tenWins => Icons.stars_rounded,
+    Achievement.firstPurchase => Icons.shopping_bag_rounded,
+    Achievement.collector => Icons.collections_bookmark_rounded,
+    Achievement.puzzles10 => Icons.extension_rounded,
+    Achievement.allPuzzles => Icons.psychology_rounded,
+    Achievement.dailyPuzzle => Icons.today_rounded,
   };
 
   Color get color => switch (this) {
     Achievement.beatLevel10 ||
     Achievement.checkmates5 ||
-    Achievement.tenWins => AppColors.gold,
+    Achievement.tenWins => AppColors.amber,
     Achievement.pureWin || Achievement.quickWin => AppColors.ruby,
-    Achievement.allLessons || Achievement.enPassant => AppColors.amethyst,
+    Achievement.allLessons ||
+    Achievement.enPassant ||
+    Achievement.puzzles10 ||
+    Achievement.allPuzzles => AppColors.amethyst,
+    Achievement.firstPurchase || Achievement.collector => AppColors.amber,
     Achievement.lanGame || Achievement.friendlyGame => AppColors.sapphire,
     _ => AppColors.emerald,
   };

@@ -48,15 +48,21 @@ class LessonState {
 
 /// Drives an interactive lesson step by step.
 class LessonCubit extends Cubit<LessonState> {
-  LessonCubit(Lesson lesson) : super(_initial(lesson, 0)) {
-    _session = LessonSession(lesson.steps.first);
-  }
+  LessonCubit(Lesson lesson)
+    : this._(LessonSession(lesson.steps.first), lesson);
 
-  late LessonSession _session;
+  LessonCubit._(LessonSession session, Lesson lesson)
+    : _session = session,
+      super(_stateFor(lesson, 0, session));
+
+  LessonSession _session;
   int _serial = 0;
 
-  static LessonState _initial(Lesson lesson, int index) {
-    final session = LessonSession(lesson.steps[index]);
+  static LessonState _stateFor(
+    Lesson lesson,
+    int index,
+    LessonSession session,
+  ) {
     return LessonState(
       lesson: lesson,
       stepIndex: index,
@@ -163,7 +169,7 @@ class LessonCubit extends Cubit<LessonState> {
 
   void _loadStep(int index) {
     _session = LessonSession(state.lesson.steps[index]);
-    emit(_initial(state.lesson, index));
+    emit(_stateFor(state.lesson, index, _session));
   }
 
   LessonState _copy({

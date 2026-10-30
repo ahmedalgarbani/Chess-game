@@ -14,7 +14,9 @@ import '../../domain/chess_clock.dart';
 import '../../domain/coach/coach.dart';
 import '../../domain/coach/coach_note.dart';
 import '../../domain/game_config.dart';
+import '../../domain/hint_wallet.dart';
 import '../../domain/game_outcome.dart';
+import '../../domain/game_snapshot.dart';
 import 'game_state.dart';
 
 /// Runs one game: applies moves, drives the computer opponent, the clock,
@@ -26,6 +28,8 @@ class GameCubit extends Cubit<GameState> {
     required this._settings,
     this._timeSource,
     this.computerPause = const Duration(milliseconds: 450),
+    this._hintWallet,
+    this._resumeFrom,
     Random? random,
   }) : _config = config,
        _random = random ?? Random(),
@@ -47,6 +51,10 @@ class GameCubit extends Cubit<GameState> {
   final Duration computerPause;
 
   final ChessAiService _ai;
+  final HintWallet? _hintWallet;
+
+  /// An unfinished game to continue; used by the first set-up only.
+  GameSnapshot? _resumeFrom;
   final TimeSource? _timeSource;
   final Random _random;
 
@@ -63,6 +71,10 @@ class GameCubit extends Cubit<GameState> {
   int _generation = 0;
   int _eventSerial = 0;
   bool _manualFlip = false;
+
+  /// When the opponent's clock ran out in a network game; their device
+  /// normally reports it, see [_onClockTick].
+  DateTime? _remoteFlagSince;
   final Map<int, PositionAnalysis> _analysisByPly = {};
   final Set<int> _gradedPlies = {};
 
@@ -74,8 +86,11 @@ class GameCubit extends Cubit<GameState> {
 
   bool get hintsUnlimited => _settings.learningMode;
 
+  int get _freeHintsLeft => max(0, hintLimit - state.hintsUsed);
+
+  /// Free hints left this game plus purchased ones; -1 when unlimited.
   int get hintsLeft =>
-      hintsUnlimited ? -1 : max(0, hintLimit - state.hintsUsed);
+      hintsUnlimited ? -1 : _freeHintsLeft + (_hintWallet?.balance ?? 0);
 
   /// Engine-powered assistance (hints, predictions, blunder guard) is not
   /// available in network games, to keep them fair.
@@ -113,18 +128,30 @@ class GameCubit extends Cubit<GameState> {
   }
 
   void _setUp() {
+    final resume = _resumeFrom;
+    _resumeFrom = null;
     _generation++;
-    _game = ChessGame();
+    _game = _replay(resume?.moves);
     _analysisByPly.clear();
     _gradedPlies.clear();
     _manualFlip = false;
+    _remoteFlagSince = null;
     _clock?.pause();
     _ticker?.cancel();
     final control = _config.timeControl;
-    _clock = control == null
+    final clock = _clock = control == null
         ? null
         : ChessClock(control, timeSource: _timeSource);
-    if (_clock != null) {
+    if (clock != null) {
+      if (resume != null) {
+        for (final (color, time) in [
+          (PieceColor.white, resume.whiteTime),
+          (PieceColor.black, resume.blackTime),
+        ]) {
+          if (time != null) clock.setRemaining(color, time);
+        }
+        if (_game.canUndo) clock.start(_game.turn);
+      }
       _ticker = Timer.periodic(
         const Duration(milliseconds: 100),
         (_) => _onClockTick(),
@@ -141,9 +168,29 @@ class GameCubit extends Cubit<GameState> {
         turn: _game.turn,
         flipped: _baseFlipped(),
         coachNotes: [if (coached) WelcomeNote(_config.playerColor)],
+        hintsUsed: resume?.hintsUsed ?? 0,
+        undosUsed: resume?.undosUsed ?? 0,
       ),
     );
+    if (_game.canUndo) {
+      _emitPosition();
+      final outcome = GameOutcome.fromStatus(_game.status, _game.turn);
+      if (outcome != null) {
+        _finish(outcome);
+        return;
+      }
+    }
     _afterPositionChanged();
+  }
+
+  /// The game after [moves]; a fresh game when they cannot be replayed.
+  static ChessGame _replay(List<String>? moves) {
+    if (moves == null || moves.isEmpty) return ChessGame();
+    try {
+      return ChessGame.fromMoves(moves);
+    } on ArgumentError {
+      return ChessGame();
+    }
   }
 
   @override
@@ -266,20 +313,23 @@ class GameCubit extends Cubit<GameState> {
       if (encoded != null && ChessAi.needsReview(_game.board, encoded)) {
         final generation = _generation;
         emit(state.copyWith(reviewingMove: true));
-        final review = await _ai.reviewMove(_snapshot, move.uci);
+        MoveReview? review;
+        try {
+          review = await _ai.reviewMove(_snapshot, move.uci);
+        } on Object {
+          // The guard is best effort: if the check fails, play the move.
+        }
         if (isClosed || generation != _generation) return;
         emit(state.copyWith(reviewingMove: false));
-        if (review.isBlunder) {
-          emit(
-            state.copyWith(
-              pendingRisky: () => PendingRiskyMove(
-                move: move,
-                review: review,
-                refutationSan: _refutationSan(move, review.refutation),
-                bestSan: _sanOfUci(review.bestMove),
-              ),
-            ),
+        final verdict = review;
+        if (verdict != null && verdict.isBlunder) {
+          final risky = PendingRiskyMove(
+            move: move,
+            review: verdict,
+            refutationSan: _refutationSan(move, verdict.refutation),
+            bestSan: _sanOfUci(verdict.bestMove),
           );
+          emit(state.copyWith(pendingRisky: () => risky));
           return;
         }
       }
@@ -434,7 +484,12 @@ class GameCubit extends Cubit<GameState> {
     final generation = _generation;
     emit(state.copyWith(aiThinking: true));
     final started = DateTime.now();
-    final move = await _ai.chooseMove(_snapshot, level.skill);
+    EngineMove? move;
+    try {
+      move = await _ai.chooseMove(_snapshot, level.skill);
+    } on Object {
+      // Handled below by falling back to a legal move.
+    }
     // A short pause feels more natural than an instant reply.
     final pauseMs = computerPause.inMilliseconds;
     final minimum = Duration(
@@ -444,7 +499,12 @@ class GameCubit extends Cubit<GameState> {
     if (elapsed < minimum) await Future<void>.delayed(minimum - elapsed);
     if (isClosed || generation != _generation) return;
     emit(state.copyWith(aiThinking: false));
-    final legal = move == null ? null : _game.moveFromUci(move.uci);
+    final legalMoves = _game.legalMoves;
+    var legal = move == null ? null : _game.moveFromUci(move.uci);
+    // Keep the game going even if the engine failed.
+    legal ??= legalMoves.isEmpty
+        ? null
+        : legalMoves[_random.nextInt(legalMoves.length)];
     if (legal != null) _commit(legal);
   }
 
@@ -454,7 +514,12 @@ class GameCubit extends Cubit<GameState> {
     final strength = _coach != null && !_showPredictions
         ? AnalysisStrength.quick
         : AnalysisStrength.normal;
-    final analysis = await _ai.analyze(_snapshot, strength: strength);
+    final PositionAnalysis analysis;
+    try {
+      analysis = await _ai.analyze(_snapshot, strength: strength);
+    } on Object {
+      return; // Predictions and grading are optional extras.
+    }
     if (isClosed || generation != _generation) return;
     _analysisByPly[ply] = analysis;
     _gradePendingMoves();
@@ -532,21 +597,39 @@ class GameCubit extends Cubit<GameState> {
 
   Future<void> requestHint() async {
     if (!_canInteract || state.hintLoading || !_engineAssists) return;
-    if (!hintsUnlimited && state.hintsUsed >= hintLimit) {
+    if (hintsLeft == 0) {
       _emitEvent(GameEventKind.hintLimitReached);
       return;
     }
     final generation = _generation;
+    final ply = _game.history.length;
     emit(state.copyWith(hintLoading: true));
-    final analysis = await _ai.analyze(
-      _snapshot,
-      strength: AnalysisStrength.normal,
-    );
+    PositionAnalysis? analysis;
+    try {
+      analysis = await _ai.analyze(
+        _snapshot,
+        strength: AnalysisStrength.normal,
+      );
+    } on Object {
+      analysis = null;
+    }
     if (isClosed || generation != _generation) return;
+    // The player may have moved while the hint was being computed.
+    if (analysis == null || ply != _game.history.length) {
+      emit(state.copyWith(hintLoading: false));
+      return;
+    }
     final best = analysis.bestMove;
     final move = best == null ? null : _game.moveFromUci(best);
     if (move == null) {
       emit(state.copyWith(hintLoading: false));
+      return;
+    }
+    // Purchased hints are only spent once a hint is actually shown.
+    final paid = !hintsUnlimited && _freeHintsLeft == 0;
+    if (paid && !(_hintWallet?.spend() ?? false)) {
+      emit(state.copyWith(hintLoading: false));
+      _emitEvent(GameEventKind.hintLimitReached);
       return;
     }
     final san = _game.sanOf(move);
@@ -624,13 +707,21 @@ class GameCubit extends Cubit<GameState> {
         emit(state.copyWith(drawOfferPending: true));
       case GameMode.computer:
         final generation = _generation;
-        final analysis =
-            state.analysis ??
-            await _ai.analyze(_snapshot, strength: AnalysisStrength.quick);
+        PositionAnalysis? analysis = state.analysis;
+        try {
+          analysis ??= await _ai.analyze(
+            _snapshot,
+            strength: AnalysisStrength.quick,
+          );
+        } on Object {
+          analysis = null;
+        }
         if (isClosed || generation != _generation) return;
         final computerScore =
-            analysis.scoreWhite * _config.playerColor.opposite.sign;
-        if (_game.history.length >= 20 && computerScore <= 30) {
+            (analysis?.scoreWhite ?? 0) * _config.playerColor.opposite.sign;
+        if (analysis != null &&
+            _game.history.length >= 20 &&
+            computerScore <= 30) {
           _finish(const GameOutcome(reason: OutcomeReason.agreement));
         } else {
           _emitEvent(GameEventKind.drawDeclined);
@@ -719,9 +810,14 @@ class GameCubit extends Cubit<GameState> {
     if (running == null) return;
     _publishClock();
     if (clock.isFlagged(running)) {
-      // On the network each device decides only its own flag.
+      // On the network each device reports its own flag; if the opponent's
+      // device stays silent (for example after losing Wi-Fi), end the game
+      // after a short grace period anyway.
       if (_config.mode == GameMode.lan && running != _config.playerColor) {
-        return;
+        final since = _remoteFlagSince ??= DateTime.now();
+        if (DateTime.now().difference(since) < const Duration(seconds: 3)) {
+          return;
+        }
       }
       _config.lanConnection?.send(const TimeoutMessage());
       _finishOnTime(running);
@@ -749,6 +845,7 @@ class GameCubit extends Cubit<GameState> {
         if (state.outcome != null || _game.turn == _config.playerColor) return;
         final move = _game.moveFromUci(uci);
         if (move == null) return;
+        _remoteFlagSince = null;
         _commit(move, fromNetwork: true);
         final clock = _clock;
         if (clock != null && whiteMs != null && blackMs != null) {
@@ -811,6 +908,29 @@ class GameCubit extends Cubit<GameState> {
   // ---------------------------------------------------------------------------
   // Results
   // ---------------------------------------------------------------------------
+
+  /// The moves played so far, in UCI notation.
+  List<String> get moves => _game.uciMoves;
+
+  /// The game in progress, to be resumed later. Null for network games,
+  /// finished games and games without moves.
+  GameSnapshot? snapshot({DateTime? now}) {
+    if (_config.mode == GameMode.lan ||
+        state.outcome != null ||
+        !_game.canUndo) {
+      return null;
+    }
+    final clock = _clock;
+    return GameSnapshot(
+      config: _config,
+      moves: _game.uciMoves,
+      savedAt: now ?? DateTime.now(),
+      whiteTime: clock?.remaining(PieceColor.white),
+      blackTime: clock?.remaining(PieceColor.black),
+      hintsUsed: state.hintsUsed,
+      undosUsed: state.undosUsed,
+    );
+  }
 
   /// The finished game from the local player's perspective, for rewards.
   GameSummary? summary() {

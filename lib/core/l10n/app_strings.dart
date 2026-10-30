@@ -6,6 +6,7 @@ import '../../features/game/domain/coach/coach_note.dart';
 import '../../features/game/domain/game_outcome.dart';
 import '../../features/progress/domain/achievement.dart';
 import '../../features/progress/domain/player_rank.dart';
+import '../../features/progress/domain/shop_items.dart';
 import '../../features/settings/domain/app_settings.dart';
 
 /// All user-facing text in Arabic and English, side by side.
@@ -165,10 +166,11 @@ class AppStrings {
   String get modeLearn => _t('تعلّم الشطرنج', 'Learn chess');
   String modeLearnSubtitle(int done, int total) =>
       _t('أكملت $done من $total دروس', '$done of $total lessons done');
-  String get modeProfile =>
-      _t('الإنجازات والمجموعة', 'Achievements & collection');
-  String get modeProfileSubtitle =>
-      _t('الأوسمة، الثيمات والإحصائيات', 'Badges, themes and statistics');
+  String get modeProfile => _t('ملفي الشخصي', 'My profile');
+  String get modeProfileSubtitle => _t(
+    'الأوسمة، سجل المباريات والإحصائيات',
+    'Badges, game history and statistics',
+  );
   String get quickPlay => _t('مباراة حرة', 'Free play');
   String get quickPlaySubtitle =>
       _t('اختر أي مستوى مفتوح وإعداداتك', 'Any unlocked level, your settings');
@@ -282,6 +284,10 @@ class AppStrings {
   String get confirmLeaveTitle => _t('مغادرة المباراة؟', 'Leave the game?');
   String get confirmLeaveBody =>
       _t('لن يتم حفظ هذه المباراة.', 'This game will not be saved.');
+  String get confirmLeaveSavedBody => _t(
+    'ستُحفظ المباراة ويمكنك استئنافها من الشاشة الرئيسية.',
+    'The game will be saved; you can resume it from the home screen.',
+  );
   String get leave => _t('مغادرة', 'Leave');
   String get drawDeclined =>
       _t('رفض الخصم التعادل.', 'The draw offer was declined.');
@@ -289,8 +295,8 @@ class AppStrings {
       _t('الخصم يعرض التعادل', 'Your opponent offers a draw');
   String get drawOfferSent => _t('أُرسل عرض التعادل…', 'Draw offer sent…');
   String get hintLimitReached => _t(
-    'انتهت تلميحات هذه المباراة. فعّل وضع التعلّم لتلميحات بلا حدود.',
-    'No hints left this game. Turn on learning mode for unlimited hints.',
+    'انتهت تلميحات هذه المباراة. اشترِ حزمة تلميحات من المتجر أو فعّل وضع التعلّم لتلميحات بلا حدود.',
+    'No hints left this game. Buy a hint pack in the shop or turn on learning mode for unlimited hints.',
   );
   String get opponentLeft => _t('غادر الخصم المباراة.', 'Your opponent left.');
   String get rematchDeclined =>
@@ -576,12 +582,11 @@ class AppStrings {
   String get playFirstGame => _t('العب أول مباراة', 'Play your first game');
 
   // ---------------------------------------------------------------------------
-  // Profile, achievements and collection
+  // Profile and achievements
   // ---------------------------------------------------------------------------
 
   String get profileTitle => _t('ملفي', 'My profile');
   String get achievementsTab => _t('الإنجازات', 'Achievements');
-  String get collectionTab => _t('المجموعة', 'Collection');
   String get statsTab => _t('الإحصائيات', 'Statistics');
   String get boardThemes => _t('الرقعات', 'Boards');
   String get pieceStyles => _t('القطع', 'Pieces');
@@ -607,6 +612,11 @@ class AppStrings {
     Achievement.lanGame => _t('لاعب الشبكة', 'Network player'),
     Achievement.dailyStreak3 => _t('ثلاثة أيام متتالية', 'Three-day streak'),
     Achievement.tenWins => _t('عشرة انتصارات', 'Ten victories'),
+    Achievement.firstPurchase => _t('أول شراء', 'First purchase'),
+    Achievement.collector => _t('جامع التحف', 'Collector'),
+    Achievement.puzzles10 => _t('حلّال الألغاز', 'Puzzle solver'),
+    Achievement.allPuzzles => _t('سيد الألغاز', 'Puzzle master'),
+    Achievement.dailyPuzzle => _t('لغز اليوم', 'Puzzle of the day'),
   };
 
   String achievementDescription(
@@ -651,6 +661,17 @@ class AppStrings {
       'Claim the daily reward 3 days running.',
     ),
     Achievement.tenWins => _t('حقق 10 انتصارات.', 'Win 10 games.'),
+    Achievement.firstPurchase => _t(
+      'اشترِ أي شيء من المتجر.',
+      'Buy anything in the shop.',
+    ),
+    Achievement.collector => _t(
+      'امتلك 8 عناصر من المتجر.',
+      'Own 8 items from the shop.',
+    ),
+    Achievement.puzzles10 => _t('حل 10 ألغاز.', 'Solve 10 puzzles.'),
+    Achievement.allPuzzles => _t('حل كل الألغاز.', 'Solve every puzzle.'),
+    Achievement.dailyPuzzle => _t('حل لغز اليوم.', 'Solve a daily puzzle.'),
   };
 
   String boardThemeName(String id) => switch (id) {
@@ -662,6 +683,10 @@ class AppStrings {
     'ocean' => _t('بحري', 'Ocean'),
     'marble' => _t('رخامي', 'Marble'),
     'golden' => _t('ذهبي', 'Golden'),
+    'amethyst' => _t('أرجواني', 'Amethyst'),
+    'rose' => _t('وردي', 'Rose'),
+    'forest' => _t('الغابة', 'Forest'),
+    'obsidian' => _t('السبج', 'Obsidian'),
     _ => id,
   };
 
@@ -670,6 +695,9 @@ class AppStrings {
     'classic' => _t('كلاسيكي', 'Classic'),
     'emeraldRuby' => _t('زمرد وياقوت', 'Emerald & ruby'),
     'sapphireGold' => _t('ذهب وياقوت أزرق', 'Gold & sapphire'),
+    'wood' => _t('خشبي', 'Wood'),
+    'roseOnyx' => _t('ذهب وردي وعقيق', 'Rose gold & onyx'),
+    'glacierLava' => _t('جليد وحمم', 'Glacier & lava'),
     'marble' => _t('رخام', 'Marble'),
     _ => id,
   };
@@ -790,6 +818,175 @@ class AppStrings {
     'Network play is not available on this platform. Try it on a phone.',
   );
   String hostedBy(String name) => _t('مباراة $name', "$name's game");
+
+  // ---------------------------------------------------------------------------
+  // Shop
+  // ---------------------------------------------------------------------------
+
+  String get shopTitle => _t('المتجر', 'Shop');
+  String get shopSubtitle => _t(
+    'اصرف عملاتك على ثيمات وقطع وإطارات ومعززات.',
+    'Spend your coins on themes, pieces, frames and boosts.',
+  );
+  String get modeShopSubtitle =>
+      _t('ثيمات، قطع، إطارات ومعززات', 'Themes, pieces, frames and boosts');
+  String get appThemesTab => _t('الثيمات', 'Themes');
+  String get avatarTab => _t('الصورة الرمزية', 'Avatar');
+  String get titlesTab => _t('الألقاب', 'Titles');
+  String get boostsTab => _t('المعززات', 'Boosts');
+  String get owned => _t('مملوك', 'Owned');
+  String get chooseAvatarPiece => _t('اختر قطعتك', 'Choose your piece');
+  String get frames => _t('الإطارات', 'Frames');
+  String get earnCoinsHint => _t(
+    'اربح العملات من المباريات والألغاز والدروس والمكافأة اليومية.',
+    'Earn coins from games, puzzles, lessons and the daily reward.',
+  );
+  String confirmPurchase(String name, int price) =>
+      _t('شراء «$name» مقابل $price عملة؟', 'Buy "$name" for $price coins?');
+  String get buy => _t('شراء', 'Buy');
+
+  String appThemeName(String id) => switch (id) {
+    'royal' => _t('ليالي الملوك', 'Royal Nights'),
+    'emerald' => _t('واحة الزمرد', 'Emerald Oasis'),
+    'desert' => _t('غروب الصحراء', 'Desert Sunset'),
+    'rose' => _t('قصر الورد', 'Rose Palace'),
+    'ocean' => _t('لؤلؤ البحر', 'Ocean Pearl'),
+    'obsidian' => _t('السبج والفضة', 'Obsidian & Silver'),
+    _ => id,
+  };
+
+  String frameName(String id) => switch (id) {
+    'classic' => _t('كلاسيكي', 'Classic'),
+    'silver' => _t('فضي', 'Silver'),
+    'emerald' => _t('زمردي', 'Emerald'),
+    'ruby' => _t('ياقوتي', 'Ruby'),
+    'sapphire' => _t('ياقوت أزرق', 'Sapphire'),
+    'flame' => _t('اللهب', 'Flame'),
+    'rainbow' => _t('قوس قزح', 'Rainbow'),
+    _ => id,
+  };
+
+  String playerTitleName(String id) => switch (id) {
+    'knightOfBoard' => _t('فارس الرقعة', 'Knight of the Board'),
+    'kingHunter' => _t('صائد الملوك', 'King Hunter'),
+    'tactician' => _t('سيد التكتيك', 'Master Tactician'),
+    'strategist' => _t('العقل الاستراتيجي', 'The Strategist'),
+    'desertFalcon' => _t('صقر الصحراء', 'Desert Falcon'),
+    'sultan' => _t('سلطان الشطرنج', 'Sultan of Chess'),
+    'legend' => _t('أسطورة رقعة', 'Legend of Ruqa'),
+    _ => id,
+  };
+
+  String get rankTitleOption =>
+      _t('لقب الرتبة (تلقائي)', 'Rank title (automatic)');
+
+  String boostName(Boost boost) => switch (boost) {
+    Boost.hintPack => _t('حزمة تلميحات', 'Hint pack'),
+    Boost.xpBooster => _t('مضاعف الخبرة', 'XP booster'),
+    Boost.streakShield => _t('درع السلسلة', 'Streak shield'),
+  };
+
+  String boostDescription(Boost boost) => switch (boost) {
+    Boost.hintPack => _t(
+      '${boost.amount} تلميحات إضافية تُستخدم بعد نفاد تلميحات المباراة المجانية.',
+      '${boost.amount} extra hints, used after a game\'s free hints run out.',
+    ),
+    Boost.xpBooster => _t(
+      'خبرة مضاعفة ×2 في المباريات الـ${boost.amount} القادمة.',
+      'Double XP in your next ${boost.amount} games.',
+    ),
+    Boost.streakShield => _t(
+      'يحمي سلسلة المكافأة اليومية إذا فاتك يوم واحد.',
+      'Keeps your daily streak if you miss a single day.',
+    ),
+  };
+
+  String boostOwned(int count) => _t('لديك: $count', 'You have: $count');
+  String get doubleXp => _t('خبرة مضاعفة ×2', 'Double XP ×2');
+  String xpBoostActive(int games) => _t(
+    'مضاعف الخبرة فعّال لـ $games مباريات',
+    'XP booster active for $games games',
+  );
+  String purchasedHints(int count) =>
+      _t('تلميحات مشتراة: $count', 'Purchased hints: $count');
+
+  // ---------------------------------------------------------------------------
+  // Puzzles
+  // ---------------------------------------------------------------------------
+
+  String get puzzlesTitle => _t('ألغاز الشطرنج', 'Chess puzzles');
+  String get puzzlesSubtitle => _t(
+    'تدرّب على التكتيكات واربح عملات مع كل لغز جديد.',
+    'Train your tactics and earn coins for every new puzzle.',
+  );
+  String modePuzzlesSubtitle(int done, int total) =>
+      _t('حللت $done من $total', '$done of $total solved');
+  String get dailyPuzzleTitle => _t('لغز اليوم', 'Puzzle of the day');
+  String dailyPuzzleBody(int bonus) => _t(
+    'حلّه اليوم واربح $bonus عملة إضافية!',
+    'Solve it today for $bonus bonus coins!',
+  );
+  String get dailyPuzzleDone =>
+      _t('حللت لغز اليوم ✓ عُد غداً للغز جديد', 'Solved ✓ come back tomorrow');
+  String puzzleNumber(int number) => _t('لغز $number', 'Puzzle $number');
+
+  String puzzleThemeName(String theme) => switch (theme) {
+    'mateIn1' => _t('كش مات في نقلة', 'Mate in 1'),
+    'mateIn2' => _t('كش مات في نقلتين', 'Mate in 2'),
+    'fork' => _t('الشوكة', 'Fork'),
+    'skewer' => _t('السيخ', 'Skewer'),
+    'pin' => _t('التثبيت', 'Pin'),
+    'promotion' => _t('الترقية', 'Promotion'),
+    'winMaterial' => _t('اكسب قطعة', 'Win material'),
+    _ => theme,
+  };
+
+  String puzzleDifficulty(int level) => switch (level) {
+    1 => _t('سهل', 'Easy'),
+    2 => _t('متوسط', 'Medium'),
+    _ => _t('صعب', 'Hard'),
+  };
+
+  String puzzleInstruction(PieceColor color, String theme) => _t(
+    'الدور على ${colorName(color)}. ${puzzleThemeName(theme)}: ابحث عن أفضل نقلة!',
+    '${colorName(color)} to move. ${puzzleThemeName(theme)}: find the best move!',
+  );
+  String get puzzleSolved =>
+      _t('أحسنت! حللت اللغز', 'Well done! Puzzle solved');
+  String get puzzleWrong =>
+      _t('ليست هذه النقلة، حاول مجدداً', 'Not that move, try again');
+  String get puzzleKeepGoing =>
+      _t('صحيح! الخصم ردّ، أكمل الحل', 'Correct! Keep going');
+  String get nextPuzzle => _t('اللغز التالي', 'Next puzzle');
+  String get startOver => _t('ابدأ من جديد', 'Start over');
+  String get puzzleHintLabel =>
+      _t('تلميح: حرّك القطعة المضيئة', 'Hint: move the highlighted piece');
+
+  // ---------------------------------------------------------------------------
+  // History, review and resume
+  // ---------------------------------------------------------------------------
+
+  String get historyTab => _t('السجل', 'History');
+  String get historyEmpty => _t(
+    'لا توجد مباريات محفوظة بعد. العب مباراة وستظهر هنا.',
+    'No saved games yet. Play a game and it will appear here.',
+  );
+  String get reviewTitle => _t('مراجعة المباراة', 'Game review');
+  String moveOf(int index, int total) =>
+      _t('النقلة $index من $total', 'Move $index of $total');
+  String versus(String name) => _t('ضد $name', 'vs $name');
+  String get analyzePosition => _t('حلّل الوضعية', 'Analyse position');
+  String bestMoveIs(String san) =>
+      _t('أفضل نقلة هنا: $san', 'Best move here: $san');
+  String get resumeGame => _t('استئناف المباراة', 'Resume game');
+  String resumeGameSubtitle(String opponent, int moves) => _t(
+    'مباراتك ضد $opponent متوقفة عند النقلة $moves',
+    'Your game vs $opponent paused at move $moves',
+  );
+  String get discard => _t('تجاهل', 'Discard');
+  String get resultWin => _t('فوز', 'Win');
+  String get resultLoss => _t('خسارة', 'Loss');
+  String movesCount(int count) => _t('$count نقلة', '$count moves');
 }
 
 /// Supplies [AppStrings] through Flutter's localization system.

@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/widgets/badges.dart';
 import '../../../core/widgets/royal_background.dart';
 import '../../game/domain/ai_level.dart';
@@ -22,6 +23,7 @@ class LevelsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.s;
+    final palette = context.palette;
     final progress = context.watch<ProgressCubit>().state;
     final levels = AiLevel.all.reversed.toList();
     return Scaffold(
@@ -64,6 +66,7 @@ class LevelsPage extends StatelessWidget {
                                 ],
                                 unlockedFromBottom:
                                     progress.highestUnlockedLevel,
+                                color: palette.accent,
                               ),
                             ),
                           ),
@@ -126,6 +129,7 @@ class _LevelNodeState extends State<_LevelNode>
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final s = context.s;
     final number = widget.level.number;
     final unlocked = widget.progress.isLevelUnlocked(number);
@@ -166,17 +170,17 @@ class _LevelNodeState extends State<_LevelNode>
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      gradient: unlocked ? AppColors.goldGradient : null,
-                      color: unlocked ? null : AppColors.surfaceHigh,
+                      gradient: unlocked ? palette.accentGradient : null,
+                      color: unlocked ? null : palette.surfaceHigh,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.background, width: 2),
+                      border: Border.all(color: palette.background, width: 2),
                     ),
                     child: Text(
                       '$number',
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
                         color: unlocked
-                            ? const Color(0xFF2A1C02)
+                            ? palette.onAccent
                             : AppColors.textMuted,
                       ),
                     ),
@@ -205,11 +209,18 @@ class _LevelNodeState extends State<_LevelNode>
 
 /// A dotted golden trail connecting the level nodes.
 class _PathPainter extends CustomPainter {
-  _PathPainter(this.points, {required this.unlockedFromBottom});
+  _PathPainter(
+    this.points, {
+    required this.unlockedFromBottom,
+    required this.color,
+  });
 
   /// Node centres from the top (level 10) to the bottom (level 1).
   final List<Offset> points;
   final int unlockedFromBottom;
+
+  /// Colour of the trail between unlocked levels.
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -222,7 +233,7 @@ class _PathPainter extends CustomPainter {
       final reached = upperLevel <= unlockedFromBottom;
       final paint = Paint()
         ..color = reached
-            ? AppColors.gold.withValues(alpha: 0.85)
+            ? color.withValues(alpha: 0.85)
             : AppColors.textMuted.withValues(alpha: 0.35)
         ..strokeWidth = 5
         ..strokeCap = StrokeCap.round;
@@ -246,5 +257,7 @@ class _PathPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_PathPainter old) =>
-      old.points != points || old.unlockedFromBottom != unlockedFromBottom;
+      old.points != points ||
+      old.unlockedFromBottom != unlockedFromBottom ||
+      old.color != color;
 }

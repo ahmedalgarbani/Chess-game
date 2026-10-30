@@ -77,6 +77,32 @@ class BoardTheme {
       dark: Color(0xFFC79332),
       price: 600,
     ),
+    BoardTheme(
+      id: 'amethyst',
+      light: Color(0xFFEDE3F7),
+      dark: Color(0xFF8B6BB8),
+      price: 300,
+    ),
+    BoardTheme(
+      id: 'rose',
+      light: Color(0xFFFBE7EE),
+      dark: Color(0xFFC77B97),
+      price: 300,
+    ),
+    BoardTheme(
+      id: 'forest',
+      light: Color(0xFFE7EFD9),
+      dark: Color(0xFF4E7A4B),
+      price: 350,
+    ),
+    BoardTheme(
+      id: 'obsidian',
+      light: Color(0xFFB9BEC7),
+      dark: Color(0xFF3C4048),
+      price: 500,
+      coordinateOnLight: Color(0xFF3C4048),
+      coordinateOnDark: Color(0xFFDDE1E7),
+    ),
   ];
 
   static BoardTheme byId(String id) =>
@@ -140,6 +166,30 @@ class PieceStyle {
       blackFill: [Color(0xFF6C8CFF), Color(0xFF3651C9), Color(0xFF17266E)],
       blackStroke: Color(0xFF070F3A),
       price: 350,
+    ),
+    PieceStyle(
+      id: 'wood',
+      whiteFill: [Color(0xFFFFF1D6), Color(0xFFF0CF96), Color(0xFFD3A35E)],
+      whiteStroke: Color(0xFF5B3A12),
+      blackFill: [Color(0xFF8A5A33), Color(0xFF5E3A1E), Color(0xFF3A2210)],
+      blackStroke: Color(0xFF1E1006),
+      price: 300,
+    ),
+    PieceStyle(
+      id: 'roseOnyx',
+      whiteFill: [Color(0xFFFFF0EC), Color(0xFFF4C1B4), Color(0xFFD98E7E)],
+      whiteStroke: Color(0xFF6B2F25),
+      blackFill: [Color(0xFF3B3B40), Color(0xFF1F1F23), Color(0xFF0B0B0D)],
+      blackStroke: Color(0xFFE8A898),
+      price: 400,
+    ),
+    PieceStyle(
+      id: 'glacierLava',
+      whiteFill: [Color(0xFFFFFFFF), Color(0xFFD5F1FF), Color(0xFF8CCFF0)],
+      whiteStroke: Color(0xFF1C5A7A),
+      blackFill: [Color(0xFFFFB347), Color(0xFFE5501B), Color(0xFF8E1C0B)],
+      blackStroke: Color(0xFF3A0A02),
+      price: 450,
     ),
     PieceStyle(
       id: 'marble',

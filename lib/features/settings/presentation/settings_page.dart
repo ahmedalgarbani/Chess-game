@@ -3,9 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/widgets/badges.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/royal_background.dart';
+import '../../history/presentation/history_cubit.dart';
 import '../../progress/presentation/progress_cubit.dart';
 import '../domain/app_settings.dart';
 import 'settings_cubit.dart';
@@ -122,19 +124,7 @@ class SettingsPage extends StatelessWidget {
                           ChoiceChip(
                             label: Text(s.experienceName(level)),
                             selected: settings.experience == level,
-                            onSelected: (_) => cubit.update(
-                              (current) =>
-                                  AppSettings.forExperience(
-                                    level,
-                                    language: current.language,
-                                    playerName: current.playerName,
-                                  ).copyWith(
-                                    boardThemeId: current.boardThemeId,
-                                    pieceStyleId: current.pieceStyleId,
-                                    haptics: current.haptics,
-                                    sounds: current.sounds,
-                                  ),
-                            ),
+                            onSelected: (_) => cubit.setExperience(level),
                           ),
                       ],
                     ),
@@ -187,6 +177,10 @@ class SettingsPage extends StatelessWidget {
     if (confirmed != true || !context.mounted) return;
     await context.read<ProgressCubit>().reset();
     if (!context.mounted) return;
+    await context.read<HistoryCubit>().clear();
+    if (!context.mounted) return;
+    // Purchased cosmetics are gone, so fall back to the free ones.
+    context.read<SettingsCubit>().update((s) => s.withDefaultCosmetics());
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(s.progressReset)));
   }
@@ -293,12 +287,13 @@ class SettingsSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return SwitchListTile(
       value: value,
       onChanged: onChanged,
       secondary: Icon(
         icon,
-        color: value ? AppColors.gold : AppColors.textMuted,
+        color: value ? palette.accent : AppColors.textMuted,
       ),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
       subtitle: subtitle == null

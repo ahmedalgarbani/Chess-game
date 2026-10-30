@@ -5,6 +5,7 @@ import '../../../app/routes.dart';
 import '../../../core/chess_ui/piece_painter.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_palette.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/board_theme.dart';
 import '../../../core/widgets/glass_card.dart';
@@ -120,6 +121,7 @@ class _Logo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Column(
       children: [
         Container(
@@ -128,13 +130,13 @@ class _Logo extends StatelessWidget {
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: const RadialGradient(
-              colors: [Color(0xFF2E3A78), Color(0xFF111633)],
+            gradient: RadialGradient(
+              colors: [palette.surfaceHigh, palette.backgroundBottom],
             ),
-            border: Border.all(color: AppColors.gold, width: 3),
+            border: Border.all(color: palette.accent, width: 3),
             boxShadow: [
               BoxShadow(
-                color: AppColors.gold.withValues(alpha: 0.35),
+                color: palette.accent.withValues(alpha: 0.35),
                 blurRadius: 40,
               ),
             ],
@@ -147,7 +149,7 @@ class _Logo extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         ShaderMask(
-          shaderCallback: (rect) => AppColors.goldGradient.createShader(rect),
+          shaderCallback: (rect) => palette.accentGradient.createShader(rect),
           child: Text(
             context.s.isArabic ? 'رُقعة' : 'Ruqa',
             style: const TextStyle(
@@ -160,8 +162,8 @@ class _Logo extends StatelessWidget {
         ),
         Text(
           context.s.appTagline,
-          style: const TextStyle(
-            color: AppColors.goldLight,
+          style: TextStyle(
+            color: palette.accentLight,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.5,
           ),
@@ -178,6 +180,7 @@ class _LanguageToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final next = language == AppLanguage.arabic
         ? AppLanguage.english
         : AppLanguage.arabic;
@@ -187,7 +190,7 @@ class _LanguageToggle extends StatelessWidget {
       ),
       icon: const Icon(Icons.translate_rounded, size: 18),
       label: Text(next == AppLanguage.english ? 'English' : 'العربية'),
-      style: TextButton.styleFrom(foregroundColor: AppColors.goldLight),
+      style: TextButton.styleFrom(foregroundColor: palette.accentLight),
     );
   }
 }
@@ -205,6 +208,7 @@ class _ExperienceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final s = context.s;
     final piece = switch (level) {
       ExperienceLevel.beginner => Piece.whitePawn,
@@ -216,12 +220,12 @@ class _ExperienceCard extends StatelessWidget {
       scale: selected ? 1 : 0.98,
       child: GlassCard(
         onTap: onTap,
-        borderColor: selected ? AppColors.gold : null,
+        borderColor: selected ? palette.accent : null,
         gradient: selected
             ? LinearGradient(
                 colors: [
-                  AppColors.gold.withValues(alpha: 0.22),
-                  AppColors.gold.withValues(alpha: 0.05),
+                  palette.accent.withValues(alpha: 0.22),
+                  palette.accent.withValues(alpha: 0.05),
                 ],
               )
             : null,
@@ -259,7 +263,7 @@ class _ExperienceCard extends StatelessWidget {
                     ? Icons.check_circle_rounded
                     : Icons.radio_button_unchecked_rounded,
                 key: ValueKey(selected),
-                color: selected ? AppColors.gold : AppColors.textMuted,
+                color: selected ? palette.accent : AppColors.textMuted,
               ),
             ),
           ],

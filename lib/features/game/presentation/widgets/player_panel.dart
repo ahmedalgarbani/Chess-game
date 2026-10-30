@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/chess_ui/piece_painter.dart';
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/board_theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../engine/chess_engine.dart';
@@ -22,6 +23,7 @@ class PlayerPanel extends StatelessWidget {
     this.subtitle,
     this.clock,
     this.thinking = false,
+    this.avatar,
   });
 
   final String name;
@@ -40,8 +42,12 @@ class PlayerPanel extends StatelessWidget {
   final ValueListenable<ClockReading?>? clock;
   final bool thinking;
 
+  /// Replaces the default king badge, e.g. with the player's avatar.
+  final Widget? avatar;
+
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final sorted = [...captured]
       ..sort((a, b) => b.type.value.compareTo(a.type.value));
     return AnimatedContainer(
@@ -50,33 +56,34 @@ class PlayerPanel extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
         color: active
-            ? AppColors.gold.withValues(alpha: 0.12)
+            ? palette.accent.withValues(alpha: 0.12)
             : AppColors.surfaceGlass,
         border: Border.all(
           color: active
-              ? AppColors.gold.withValues(alpha: 0.6)
-              : AppColors.outline,
+              ? palette.accent.withValues(alpha: 0.6)
+              : palette.outline,
         ),
       ),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color == PieceColor.white
-                  ? const Color(0xFFF4ECDD)
-                  : const Color(0xFF1B2147),
-              border: Border.all(color: AppColors.gold, width: 1.5),
-            ),
-            child: PieceView(
-              piece: Piece(color, PieceType.king),
-              style: pieceStyle,
-              shadow: false,
-            ),
-          ),
+          avatar ??
+              Container(
+                width: 40,
+                height: 40,
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color == PieceColor.white
+                      ? const Color(0xFFF4ECDD)
+                      : palette.surfaceHigh,
+                  border: Border.all(color: palette.accent, width: 1.5),
+                ),
+                child: PieceView(
+                  piece: Piece(color, PieceType.king),
+                  style: pieceStyle,
+                  shadow: false,
+                ),
+              ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -199,20 +206,17 @@ class _ThinkingLabelState extends State<_ThinkingLabel>
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return FadeTransition(
       opacity: Tween(begin: 0.4, end: 1.0).animate(_controller),
       child: Row(
         children: [
-          const Icon(
-            Icons.psychology_rounded,
-            size: 16,
-            color: AppColors.goldLight,
-          ),
+          Icon(Icons.psychology_rounded, size: 16, color: palette.accentLight),
           const SizedBox(width: 4),
           Text(
             widget.text,
-            style: const TextStyle(
-              color: AppColors.goldLight,
+            style: TextStyle(
+              color: palette.accentLight,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
@@ -231,12 +235,13 @@ class _ClockBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final low = time < const Duration(seconds: 20);
     final background = running
-        ? (low ? AppColors.ruby : AppColors.goldLight)
-        : AppColors.surfaceHigh;
+        ? (low ? AppColors.ruby : palette.accentLight)
+        : palette.surfaceHigh;
     final foreground = running
-        ? (low ? Colors.white : const Color(0xFF2A1C02))
+        ? (low ? Colors.white : palette.onAccent)
         : (low ? AppColors.ruby : AppColors.textSecondary);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),

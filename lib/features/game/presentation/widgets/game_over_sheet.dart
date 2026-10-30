@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_palette.dart';
 import '../../../../core/widgets/badges.dart';
 import '../../../../core/widgets/royal_button.dart';
 import '../../../../engine/chess_engine.dart';
@@ -43,6 +44,7 @@ class _GameOverSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final s = context.s;
     final winner = outcome.winner;
     final local = config.mode == GameMode.local;
@@ -63,7 +65,7 @@ class _GameOverSheet extends StatelessWidget {
     final (icon, color) = switch ((winner, lost)) {
       (null, _) => (Icons.handshake_rounded, AppColors.sapphire),
       (_, true) => (Icons.sentiment_dissatisfied_rounded, AppColors.ruby),
-      _ => (Icons.emoji_events_rounded, AppColors.gold),
+      _ => (Icons.emoji_events_rounded, palette.accent),
     };
 
     final rewards = this.rewards;
@@ -176,6 +178,7 @@ class _RewardsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final s = context.s;
     return Container(
       padding: const EdgeInsets.all(16),
@@ -183,11 +186,11 @@ class _RewardsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
           colors: [
-            AppColors.gold.withValues(alpha: 0.18),
-            AppColors.gold.withValues(alpha: 0.04),
+            palette.accent.withValues(alpha: 0.18),
+            palette.accent.withValues(alpha: 0.04),
           ],
         ),
-        border: Border.all(color: AppColors.outline),
+        border: Border.all(color: palette.outline),
       ),
       child: Column(
         children: [
@@ -216,6 +219,14 @@ class _RewardsCard extends StatelessWidget {
               ),
             ],
           ),
+          if (rewards.boosted) ...[
+            const SizedBox(height: 8),
+            _Banner(
+              icon: Icons.bolt_rounded,
+              color: AppColors.amber,
+              text: s.doubleXp,
+            ),
+          ],
           if (rewards.leveledUp) ...[
             const SizedBox(height: 10),
             _Banner(
@@ -229,7 +240,7 @@ class _RewardsCard extends StatelessWidget {
             _Banner(
               icon: Icons.lock_open_rounded,
               text: s.levelUnlocked(rewards.unlockedComputerLevel!),
-              color: AppColors.gold,
+              color: palette.accent,
             ),
           ],
           for (final achievement in rewards.newAchievements) ...[
